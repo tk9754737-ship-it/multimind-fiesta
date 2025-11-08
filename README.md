@@ -16,7 +16,7 @@ A Next.js application that allows users to compare responses from multiple AI mo
 
 - **GPT-5** (OpenAI) - Latest GPT model with advanced reasoning
 - **Claude 3.5 Sonnet** (Anthropic) - Fast and efficient reasoning model
-- **Gemini 2.5 Pro** (Google) - Multimodal reasoning capabilities
+- **Gemini 1.5-flash-latest** (Google) - Multimodal reasoning capabilities
 - **DeepSeek R1** (DeepSeek) - Advanced reasoning and coding
 
 ## Prerequisites

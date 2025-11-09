@@ -4,11 +4,14 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 const MODEL_MAPPING: { [key: string]: string } = {
-  'gpt-5': 'openai/gpt-5',
-  'claude-4-sonnet': 'anthropic/claude-3.5-sonnet',
-  'gemini-2.5': 'google/gemini-2.5-flash-image-preview:free',
-  'deepseek': 'deepseek/deepseek-chat-v3.1:free'
+  'gpt-5': 'openai/o1-mini', // Free, good OpenAI-like model
+  'claude-4-sonnet': 'mistralai/mistral-7b-instruct:free', // Free Claude-like model
+  'google': 'meta-llama/llama-3.1-8b-instruct:free', // Free Llama model (Google slot)
+  'deepseek': 'deepseek/deepseek-v3.2-exp', 
+'perplexity':"perplexity/sonar-reasoning-pro",
+  'grok': "mistralai/mistral-medium-3.1" ,
 };
+
 
 // Helper function for CORS headers
 function corsHeaders() {
@@ -58,6 +61,8 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        console.log(`Calling model: ${openRouterModel}`);
+
         const response = await fetch(OPENROUTER_API_URL, {
           method: 'POST',
           headers: {
@@ -112,6 +117,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: corsHeaders() }
+
     );
   }
 }

@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { FcGoogle } from 'react-icons/fc'; // Install with: npm install react-icons
 import { useAuth } from '@/lib/auth-context';
-import { Sparkles } from 'lucide-react';
+import React from "react";
+import { Sparkles } from "lucide-react";
+
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +18,8 @@ export default function AuthForm() {
   const [message, setMessage] = useState('');
 
   const { signIn, signUp } = useAuth();
+  const [showModelModal, setShowModelModal] = useState(false);
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +56,7 @@ export default function AuthForm() {
         </div>
 
         {/* Auth Form */}
-        <div className="bg-slate-800/80 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-xl">
+<div className="bg-slate-800/80 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-xl max-h-[80vh] overflow-y-auto custom-scrollbar">
           <form onSubmit={handleSubmit} className="space-y-6">
             {!isLogin && (
               <div>

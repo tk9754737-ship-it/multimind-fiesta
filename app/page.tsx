@@ -1,7 +1,30 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Plus, Moon, Sun, Image, Paperclip, Mic, Sparkles as SparklesIcon, X, History, LogOut, User, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+
+
+// Define a type for your chat session data
+type Session = {
+  id: string;
+  title: string;
+  updated_at: string;
+  messages?: any[]; // optional because it might not exist in DB
+};
+
+// ✅ At the top of app/page.tsx
+
+type ModelKey = 'chatgpt' | 'gemini' | 'deepseek' | 'perplexity' | 'anthropic' | 'xai';
+
+interface ModelPreferences {
+  chatgpt: boolean;
+  gemini: boolean;
+  deepseek: boolean;
+  perplexity: boolean;
+  anthropic: boolean;
+  xai: boolean;
+}
 
 // Custom SVG Logo Components
 const GPTLogo = ({ className = "w-8 h-8", darkMode = false }: { className?: string; darkMode?: boolean }) => (
@@ -59,11 +82,41 @@ const DeepSeekLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
     }}
   />
 );
+// Add these above AI_MODELS in your page.tsx
+
+const PerplexityLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <div 
+    className={className}
+    style={{
+      backgroundImage: 'url(/svg-logos/perplexity.svg)',
+      backgroundSize: 'contain',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'center',
+      minWidth: '32px',
+      minHeight: '32px'
+    }}
+  />
+);
+
+const GrokLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <div 
+    className={className}
+    style={{
+      backgroundImage: 'url(/svg-logos/grok.svg)',
+      backgroundSize: 'contain',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'center',
+      minWidth: '32px',
+      minHeight: '32px'
+    }}
+  />
+);
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { useTheme } from '@/lib/theme-context';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { ChatSession } from './types';
 
 interface AIModel {
   id: string;
@@ -91,6 +144,18 @@ interface ModelResponse {
   error?: string;
   isBest?: boolean;
 }
+
+// ===== Model Preferences Types =====
+
+const MODELS: { name: string; key: ModelKey; logo: string }[] = [
+  { name: "ChatGPT", key: "chatgpt", logo: "/logos/chatgpt.svg" },
+  { name: "Gemini", key: "gemini", logo: "/logos/gemini.svg" },
+  { name: "DeepSeek", key: "deepseek", logo: "/logos/deepseek.svg" },
+  { name: "Perplexity", key: "perplexity", logo: "/logos/perplexity.svg" },
+  { name: "Anthropic", key: "anthropic", logo: "/logos/anthropic.svg" },
+  { name: "xAI", key: "xai", logo: "/logos/xai.svg" },
+];
+
 
 const AI_MODELS: AIModel[] = [
   {
@@ -128,8 +193,28 @@ const AI_MODELS: AIModel[] = [
     icon: <DeepSeekLogo className="w-8 h-8" />,
     color: 'from-rose-500 to-pink-600',
     bgColor: 'bg-rose-500/10'
+  },
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    provider: 'Perplexity AI',
+    description: 'Web-connected, up-to-date answers',
+    icon: <PerplexityLogo className="w-8 h-8" />,
+    color: 'from-blue-500 to-indigo-600',
+    bgColor: 'bg-blue-500/10'
+  },
+  {
+    id: 'grok',
+    name: 'Grok',
+    provider: 'xAI',
+    description: 'Conversational AI by xAI',
+    icon: <GrokLogo className="w-8 h-8" />,
+    color: 'from-orange-500 to-yellow-600',
+    bgColor: 'bg-orange-500/10'
   }
 ];
+
+
 
 export default function Home() {
   const { user, signOut } = useAuth();
@@ -137,23 +222,82 @@ export default function Home() {
   const [selectedModels, setSelectedModels] = useState<string[]>(AI_MODELS.map(m => m.id));
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentInput, setCurrentInput] = useState('');
+
+  type ModelKey = 'chatgpt' | 'gemini' | 'deepseek' | 'perplexity' | 'anthropic' | 'xai';
+
+interface ModelPreferences {
+  chatgpt: boolean;
+  gemini: boolean;
+  deepseek: boolean;
+  perplexity: boolean;
+  anthropic: boolean;
+  xai: boolean;
+}
+
+const [modelPrefs, setModelPrefs] = useState<ModelPreferences>({
+  chatgpt: true,
+  gemini: true,
+  deepseek: true,
+  perplexity: true,
+  anthropic: true,
+  xai: true,
+});
+
   const [responses, setResponses] = useState<ModelResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [newProject, setNewProject] = useState({ name: '', description: '' });
   const [showSettings, setShowSettings] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [recentSessions, setRecentSessions] = useState<{id: string, title: string, firstMessage: string, date: string}[]>([]);
-  
+  const [recentSessions, setRecentSessions] = useState<{
+    id: string; title: string; firstMessage: string; date: string; messages: any[];
+}[]>([]);
+
   // State for file attachments
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [showFilePicker, setShowFilePicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
   
+
+// Auto-save to recent chats
+useEffect(() => {
+    if (recentSessions.length > 0) {
+        localStorage.setItem('recentSessions', JSON.stringify(recentSessions));
+    }
+}, [recentSessions]);
+
+// Load saved chats on page load
+useEffect(() => {
+    const saved = localStorage.getItem('recentSessions');
+    if (saved) {
+        setRecentSessions(JSON.parse(saved));
+    }
+}, []);
+
+// Function to save chats to history
+const saveChatToHistory = (message: string) => {
+    const newChat = {
+        id: Date.now().toString(),
+        title: message.substring(0, 30) + '...',
+        firstMessage: message,
+        date: new Date().toLocaleDateString(),
+        messages: [{ text: message, isUser: true }]
+    };
+    
+    setRecentSessions(prev => [newChat, ...prev]);
+};
+
   // Check for mobile screen size and collapse sidebar by default
   useEffect(() => {
     const handleResize = () => {
@@ -173,6 +317,28 @@ export default function Home() {
     // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+ 
+// 🔍 Filter recent chats based on search query
+useEffect(() => {
+  if (searchQuery.trim() === '') {
+    setFilteredSessions(recentSessions);
+  } else {
+    const filtered = recentSessions
+      .filter(session =>
+        (session.title?.toLowerCase() ?? '').includes(searchQuery.toLowerCase()) ||
+        (session.firstMessage?.toLowerCase() ?? '').includes(searchQuery.toLowerCase())
+      )
+      // ✅ Add this to ensure the structure matches ChatSession type
+      .map(session => ({
+        ...session,
+        messages: session.messages || [],
+      }));
+
+    setFilteredSessions(filtered);
+  }
+}, [searchQuery, recentSessions]);
+
+
   const [passwordChange, setPasswordChange] = useState({ current: '', new: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -208,62 +374,62 @@ export default function Home() {
   }, [user]);
   
   // Function to load recent chat sessions
-  const loadRecentSessions = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('id, title, updated_at')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(10); // Increased to show more chats like ChatGPT
-      
-      if (error) throw error;
-      
-      if (data) {
-        // For each session, get the first message
-        const sessionsWithFirstMessage = await Promise.all(
-          data.map(async (session) => {
-            const { data: messageData } = await supabase
-              .from('chat_messages')
-              .select('content')
-              .eq('session_id', session.id)
-              .eq('role', 'user')
-              .order('created_at', { ascending: true })
-              .limit(1)
-              .single();
-            
-            // Format the date to show in the UI
-            const updatedAt = new Date(session.updated_at);
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            
-            let dateDisplay = '';
-            if (updatedAt.toDateString() === today.toDateString()) {
-              dateDisplay = 'Today';
-            } else if (updatedAt.toDateString() === yesterday.toDateString()) {
-              dateDisplay = 'Yesterday';
-            } else {
-              dateDisplay = updatedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }
-            
-            return {
-              id: session.id,
-              title: session.title,
-              firstMessage: messageData?.content || 'New conversation',
-              date: dateDisplay
-            };
-          })
-        );
-        
-        setRecentSessions(sessionsWithFirstMessage);
-      }
-    } catch (error) {
-      console.error('Error loading recent sessions:', error);
+const loadRecentSessions = async () => {
+  if (!user) {
+    setRecentSessions([]);
+    return;
+  }
+
+  try {
+    const { data: sessions, error } = await supabase
+      .from('chat_sessions')
+      .select('id, title, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+    if (!sessions || sessions.length === 0) {
+      setRecentSessions([]);
+      return;
     }
-  };
+
+    const sessionsWithFirstMessage = await Promise.all(
+      sessions.map(async (session: any) => {
+        const { data: messageData } = await supabase
+          .from('messages')
+          .select('content')
+          .eq('session_id', session.id)
+          .order('created_at', { ascending: true })
+          .limit(1);
+
+        const firstMsg = messageData && messageData.length > 0 ? messageData[0].content : 'New conversation';
+
+        const updatedAt = new Date(session.updated_at);
+        const now = new Date();
+        let dateDisplay = '';
+        if (updatedAt.toDateString() === now.toDateString()) {
+          dateDisplay = 'Today';
+        } else {
+          dateDisplay = updatedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        return {
+          id: session.id,
+          title: session.title || 'New conversation',
+          firstMessage: firstMsg,
+          date: dateDisplay,
+          messages: messageData || []  // This is correct
+        };
+      })
+    );
+
+    setRecentSessions(sessionsWithFirstMessage);
+  } catch (error) {
+    console.error('Error loading recent sessions:', error);
+    setRecentSessions([]);
+  }
+};
   
   // Function to load a specific chat session
   const loadChatSession = async (sessionId: string) => {
@@ -300,7 +466,7 @@ export default function Home() {
       
       if (messagesData) {
         // Load all model responses for all user messages
-        const userMessages = messagesData.filter(msg => msg.role === 'user');
+        const userMessages = messagesData.filter((msg: { role: string; }) => msg.role === 'user');
         const allResponses = new Map();
         
         // For each user message, load its model responses
@@ -321,8 +487,8 @@ export default function Home() {
         const formattedMessages = [];
         
         // Get only user messages and sort them chronologically
-        const userMessagesOnly = messagesData.filter(msg => msg.role === 'user')
-          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        const userMessagesOnly = messagesData.filter((msg: { role: string; }) => msg.role === 'user')
+          .sort((a: { timestamp: string | number | Date; }, b: { timestamp: string | number | Date; }) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         
         for (const userMsg of userMessagesOnly) {
           // Add user message
@@ -506,6 +672,12 @@ export default function Home() {
       const fileNames = attachedFiles.map(file => file.name).join(', ');
       messageContent += `\n[Attached: ${fileNames}]`;
     }
+saveChatToHistory(messageContent);
+
+if (attachedFiles.length > 0) {
+    const fileNames = attachedFiles.map(file => file.name).join(', ');
+    messageContent += '\n[attached: ${fileNames}]';
+}
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -539,8 +711,7 @@ export default function Home() {
       isLoading: true
     }));
     setResponses(initialResponses);
-
-    try {
+     try {
       // Make API call to our backend which will call OpenRouter
       // Note: In a real implementation, you would need to handle file uploads
       // This would typically involve FormData and multipart/form-data
@@ -709,6 +880,10 @@ export default function Home() {
     );
   }
 
+ function handleUpdatePreferences(e: React.MouseEvent<HTMLButtonElement>) {
+  throw new Error("Function not implemented.");
+}
+
   return (
     <div className={cn(
       "min-h-screen transition-colors duration-300",
@@ -725,13 +900,12 @@ export default function Home() {
               : "bg-white/90 text-gray-900 hover:bg-gray-100",
             "shadow-lg backdrop-blur-sm"
           )}
-        >
+       >
           <Menu className="w-6 h-6" />
         </button>
       )}
-
-      {/* Sidebar */}
-      <div className={cn(
+      
+<div className={cn(
         "fixed left-0 top-0 h-full backdrop-blur-xl transition-all duration-300 z-40",
         darkMode 
           ? "bg-slate-800/80 border-r border-slate-600" 
@@ -739,10 +913,11 @@ export default function Home() {
         sidebarCollapsed ? "w-16" : "w-64",
         isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
       )}>
-        <div className={cn(
+                <div className={cn(
           "h-full transition-all duration-300 overflow-hidden", 
           sidebarCollapsed ? "p-3" : "pl-6 pr-0 py-6"
         )}>
+
         {/* Logo and Dark Mode Toggle */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -763,6 +938,8 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          
           
           {/* Dark Mode Toggle */}
           {!sidebarCollapsed && (
@@ -780,37 +957,110 @@ export default function Home() {
             </button>
           )}
         </div>
+        
 
-          {/* User Info section removed */}
 
         {/* New Chat Button */}
-        {/* New Chat and History Buttons */}
-        <div className={cn(
-          "flex gap-2 mb-6",
-          sidebarCollapsed ? "flex-col" : "flex-row mr-2"
-        )}>
-          <button 
-            onClick={handleNewChat}
-            className={cn(
-              "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg",
-              sidebarCollapsed ? "w-full px-2" : "flex-1 px-4"
-            )}>
-            <Plus className="w-4 h-4" />
-            {!sidebarCollapsed && <span>New Chat</span>}
-          </button>
-          
-          <Link
-            href="/history"
-            className={cn(
-              "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg",
-              sidebarCollapsed ? "w-full px-2" : "flex-1 px-4"
-            )}
-          >
-            <History className="w-4 h-4" />
-            {!sidebarCollapsed && <span>History</span>}
-          </Link>
-        </div>
+        {/* New Chat, History & Search */}
+<div
+  className={cn(
+    "flex gap-2 mb-6",
+    sidebarCollapsed ? "flex-col" : "flex-row mr-2"
+  )}
+>
+  {/* New Chat */}
+  <button
+    onClick={handleNewChat}
+    className={cn(
+      "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg",
+      sidebarCollapsed ? "w-full px-2" : "flex-1 px-4"
+    )}
+  >
+    <Plus className="w-4 h-4" />
+    {!sidebarCollapsed && <span>New Chat</span>}
+  </button>
 
+  {/* History */}
+  <Link
+    href="/history"
+    className={cn(
+      "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg",
+      sidebarCollapsed ? "w-full px-2" : "flex-1 px-4"
+    )}
+  >
+    <History className="w-4 h-4" />
+    {!sidebarCollapsed && <span>History</span>}
+  </Link>
+</div>
+
+{/* Search Bar - AI Fiesta Style */}
+{!sidebarCollapsed && (
+  <div className="mb-6 px-3">
+    <div className={cn(
+      "relative rounded-xl transition-all duration-200",
+      darkMode 
+        ? "bg-slate-700/60 hover:bg-slate-700/80 focus-within:bg-slate-700/80" 
+        : "bg-slate-100/80 hover:bg-slate-200/80 focus-within:bg-slate-200/80"
+    )}>
+      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+        <svg 
+          className={cn(
+            "w-4 h-4 transition-colors",
+            darkMode ? "text-slate-400" : "text-slate-500"
+          )} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
+        </svg>
+      </div>
+      <input
+        type="text"
+        placeholder="Type here to search..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className={cn(
+          "w-full bg-transparent border-0 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-0 placeholder:transition-colors",
+          darkMode 
+            ? "text-white placeholder-slate-400" 
+            : "text-slate-900 placeholder-slate-500"
+        )}
+      />
+      {searchQuery && (
+        <button
+          onClick={() => setSearchQuery('')}
+          className="absolute inset-y-0 right-3 flex items-center"
+        >
+          <X className={cn(
+            "w-4 h-4 transition-colors",
+            darkMode ? "text-slate-400 hover:text-slate-300" : "text-slate-500 hover:text-slate-700"
+          )} />
+        </button>
+      )}
+    </div>
+  </div>
+)}
+
+{/* Create Project Button */}
+{!sidebarCollapsed && (
+  <div className="px-3 mb-4">
+    <button
+      onClick={() => setIsProjectModalOpen(true)}
+      className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] shadow-md"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" 
+           fill="none" 
+           viewBox="0 0 24 24" 
+           strokeWidth={2} 
+           stroke="currentColor" 
+           className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+      </svg>
+      Create Project
+    </button>
+  </div>
+)}
 
 
           {/* Recent Chats */}
@@ -822,9 +1072,10 @@ export default function Home() {
               )}>Recent Chats</h3>
               <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 pr-6">
                 <div className="space-y-1">
-                  {recentSessions.length > 0 ? (
-                    <div>
-                      {recentSessions.map((session) => (
+                 {filteredSessions.length > 0 ? (
+                <div>
+    {filteredSessions.map((session) => (
+
                         <div 
                           key={session.id} 
                           className={cn(
@@ -1229,7 +1480,7 @@ export default function Home() {
                           )}>
                             {model?.name === "GPT-5" && "Hi, I'm GPT-5."}
                             {model?.name === "Claude Sonnet 4" && "Hi maher, how are you?"}
-                            {model?.name === "Gemini" && "Hello, Maherunnisa"}
+                            {model?.name === "Gemini" && "Hello, Taniya"}
                             {model?.name === "DeepSeek" && "Hi, I'm DeepSeek."}
                           </h3>
                           <p className={cn(
@@ -1455,7 +1706,7 @@ export default function Home() {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md mx-4 border-2 border-slate-600">
+<div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md mx-4 border-2 border-slate-600 max-h-[80vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Settings</h2>
               <button
@@ -1503,6 +1754,68 @@ export default function Home() {
               >
                 {passwordLoading ? 'Updating...' : 'Update Password'}
               </button>
+
+              {/* Model Preferences Section */}
+<div className="mt-8 bg-slate-800 rounded-xl p-5 border border-slate-700 max-h-[45vh] overflow-y-auto custom-scrollbar">
+  <h3 className="text-lg font-semibold mb-4 text-white sticky top-0 bg-slate-800 pb-2">
+    Model Preferences
+  </h3>
+
+  <div className="space-y-3">
+    {[
+      { name: "ChatGPT", key: "chatgpt", logo: "/logos/chatgpt.svg" },
+      { name: "Gemini", key: "gemini", logo: "/logos/gemini.svg" },
+      { name: "DeepSeek", key: "deepseek", logo: "/logos/deepseek.svg" },
+      { name: "Perplexity", key: "perplexity", logo: "/logos/perplexity.svg" },
+      { name: "Anthropic", key: "anthropic", logo: "/logos/anthropic.svg" },
+      { name: "xAI", key: "xai", logo: "/logos/xai.svg" },
+    ].map((model) => (
+      <div
+        key={model.key}
+        className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-700 hover:border-slate-500 transition"
+      >
+        {/* Left Side (Logo + Name) */}
+        <div className="flex items-center gap-3">
+          <img
+            src={model.logo}
+            alt={model.name}
+            className="w-6 h-6 rounded-md object-contain"
+          />
+          <span className="text-sm text-gray-300">{model.name}</span>
+        </div>
+
+ <button
+  type="button"
+  onClick={() =>
+    setModelPrefs((prev) => ({
+      ...prev,
+      [model.key as ModelKey]: !prev[model.key as ModelKey],
+    }))
+  }
+  className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
+    modelPrefs[model.key as ModelKey] ? "bg-green-500" : "bg-slate-600"
+  }`}
+>
+  <span
+    className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transform transition-transform duration-300 ${
+      modelPrefs[model.key as ModelKey] ? "translate-x-6" : ""
+    }`}
+  />
+</button>
+      </div>
+    ))}
+  </div>
+
+  
+  <button
+    onClick={handleUpdatePreferences}
+    className="mt-5 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium py-2 rounded-lg hover:opacity-90 transition"
+  >
+    Update Preferences
+  </button>
+</div>
+
+
               
               {/* Sign Out Button */}
               <div className="mt-6 pt-6 border-t border-slate-600">
@@ -1515,12 +1828,62 @@ export default function Home() {
                 >
                   <LogOut className="w-5 h-5" />
                   Sign Out
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+ </button>
+</div>
+</div>
+</div>
+</div>
+)}
+
+{/* ✅ Project Creation Modal */}
+{isProjectModalOpen && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl w-96">
+      <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Create New Project</h2>
+
+      <input
+        type="text"
+        placeholder="Project Name"
+        value={newProject.name}
+        onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+        className="w-full mb-3 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-slate-800 dark:text-white"
+      />
+
+      <textarea
+        placeholder="Description (optional)"
+        value={newProject.description}
+        onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+        className="w-full mb-4 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-slate-800 dark:text-white"
+      />
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setIsProjectModalOpen(false)}
+          className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={() => {
+            if (!newProject.name.trim()) {
+              alert('Please enter a project name');
+              return;
+            }
+            console.log('✅ Project Created:', newProject);
+            setIsProjectModalOpen(false);
+            setNewProject({ name: '', description: '' });
+          }}
+          className="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-700 text-white hover:from-violet-700 hover:to-purple-800 transition"
+        >
+          Create
+        </button>
+      </div>
     </div>
+  </div>
+)}
+
+      </div>  
+   
   );
 }

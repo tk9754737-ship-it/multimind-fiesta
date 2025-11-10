@@ -84,36 +84,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<{ error: Error | null }> => {
+
+  try {
     // Get the site URL from environment variable first
     let siteUrl = process.env.NEXT_PUBLIC_APP_URL;
-    
+
     // If not set, construct from window location but ensure it's not localhost for production
     if (!siteUrl) {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const { protocol, hostname, port } = window.location;
-        // Don't use localhost/127.0.0.1 URLs in production
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-          // Fallback to a default production URL - you should set NEXT_PUBLIC_APP_URL
-          siteUrl = 'https://multimind-ai.vercel.app';
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+          // Fallback for local development
+          siteUrl = "http://localhost:3000";
         } else {
-          siteUrl = `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+          siteUrl = `${protocol}//${hostname}${port ? `:${port}` : ""}`;
         }
       } else {
-        // Server-side fallback
-        siteUrl = 'https://multimind-ai.vercel.app';
+        // Server-side fallback (for SSR or API routes)
+        siteUrl = "https://multimind-ai.vercel.app";
       }
     }
-    
+
     // Remove trailing slash if present
-    siteUrl = siteUrl.replace(/\/$/, '');
-    
+    siteUrl = siteUrl.replace(/\/$/, "");
+
+    console.log("🔗 Using site URL:", siteUrl);
+
+    // Attempt the password reset call
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl}/reset-password`,
     });
-    return { error };
-  };
 
+    if (error) {
+      console.error("❌ Supabase reset password error:", error);
+      return { error };
+    }
+
+    console.log("✅ Password reset email sent successfully");
+    return { error: null };
+  } catch (err) {
+    console.error("❌ Unexpected resetPassword error:", err);
+   return { error: err instanceof Error ? err : new Error(String(err)) };
+
+  }
+};
   const value = {
     user,
     session,

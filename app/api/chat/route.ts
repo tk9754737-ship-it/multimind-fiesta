@@ -10,6 +10,9 @@ const MODEL_MAPPING: { [key: string]: string } = {
   'deepseek': 'deepseek/deepseek-v3.2-exp', 
 'perplexity':"perplexity/sonar-reasoning-pro",
   'grok': "mistralai/mistral-medium-3.1" ,
+  "mistral": "mistralai/mistral-7b-instruct:free",
+  "meta-llama": "meta-llama/llama-3.1-8b-instruct:free",
+  "qwen": "qwen/qwen2.5-7b-instruct:free",
 };
 
 

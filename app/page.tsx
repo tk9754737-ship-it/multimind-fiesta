@@ -1,8 +1,9 @@
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Plus, Moon, Sun, Image, Paperclip, Mic, Sparkles as SparklesIcon, X, History, LogOut, User, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { Send, Plus, Moon, Sun, Image, Paperclip, Mic, Sparkles as SparklesIcon, X, History, LogOut, User, ChevronLeft, ChevronRight, Menu, PlusIcon } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import LandingPage from "./components/LandingPage";
 
 
 // Define a type for your chat session data
@@ -84,19 +85,55 @@ const DeepSeekLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
 );
 // Add these above AI_MODELS in your page.tsx
 
-const PerplexityLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
-  <div 
-    className={className}
-    style={{
-      backgroundImage: 'url(/svg-logos/perplexity.svg)',
-      backgroundSize: 'contain',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center',
-      minWidth: '32px',
-      minHeight: '32px'
-    }}
-  />
+const MistralLogo = () => (
+  <svg width="32" height="32" viewBox="0 0 256 256">
+    <rect width="256" height="256" rx="60" fill="#FF6B00" />
+    <path
+      d="M75 180 L115 70 L155 180 Z"
+      fill="white"
+    />
+  </svg>
 );
+
+const LlamaLogo = () => (
+  <svg width="32" height="32" viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="30" fill="#007AFF" />
+    <path
+      d="M22 38 C22 26, 42 26, 42 38 C42 46, 22 46, 22 38 Z"
+      fill="white"
+    />
+    <circle cx="26" cy="30" r="4" fill="white" />
+    <circle cx="38" cy="30" r="4" fill="white" />
+  </svg>
+);
+
+const QwenLogo = () => (
+  <svg width="32" height="32" viewBox="0 0 256 256">
+    <rect width="256" height="256" rx="50" fill="#0FA970" />
+    <path
+      d="M128 50 C80 50, 50 90, 50 128 C50 166, 80 206, 128 206 C176 206, 206 166, 206 128 C206 90, 176 50, 128 50 Z M128 170 C102 170, 85 150, 85 128 C85 106, 102 86, 128 86 C154 86, 171 106, 171 128 C171 150, 154 170, 128 170 Z"
+      fill="white"
+    />
+  </svg>
+);
+
+const PerplexityLogo = () => (
+  <svg width="32" height="32" viewBox="0 0 256 256">
+    <circle cx="128" cy="128" r="120" fill="#1A73E8" />
+    <text
+      x="128"
+      y="155"
+      textAnchor="middle"
+      fontSize="140"
+      fontWeight="bold"
+      fill="white"
+      fontFamily="Arial, sans-serif"
+    >
+      P
+    </text>
+  </svg>
+);
+
 
 const GrokLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
   <div 
@@ -119,6 +156,7 @@ import Link from 'next/link';
 import { ChatSession } from './types';
 
 interface AIModel {
+  [x: string]: any;
   id: string;
   name: string;
   provider: string;
@@ -152,67 +190,160 @@ const MODELS: { name: string; key: ModelKey; logo: string }[] = [
   { name: "Gemini", key: "gemini", logo: "/logos/gemini.svg" },
   { name: "DeepSeek", key: "deepseek", logo: "/logos/deepseek.svg" },
   { name: "Perplexity", key: "perplexity", logo: "/logos/perplexity.svg" },
+ 
   { name: "Anthropic", key: "anthropic", logo: "/logos/anthropic.svg" },
   { name: "xAI", key: "xai", logo: "/logos/xai.svg" },
 ];
 
+const FREE_MODELS = ['mistral', 'deepseek', 'google', 'meta', 'qwen'];
+const PREMIUM_MODELS = [
+  "gpt-5",
+  "claude-4-sonnet",
+  "gemini-pro",
+  "deepseek-pro",
+  "perplexity",
+  "grok"
+];
+
+
+// =======================
+// FREE + PREMIUM MODELS
+// =======================
 
 const AI_MODELS: AIModel[] = [
+  // -----------------------
+  // FREE MODELS
+  // -----------------------
+
   {
-    id: 'gpt-5',
-    name: 'OpenAI',
-    provider: 'Chatgpt',
-    description: 'Latest GPT model with advanced reasoning',
-    icon: (darkMode: boolean) => <GPTLogo className="w-8 h-8" darkMode={darkMode} />,
-    color: 'from-violet-500 to-purple-600',
-    bgColor: 'bg-violet-500/10'
-  },
+  id: "mistral",
+  name: "Mistral",
+  provider: "Mistral AI",
+  description: "Fast open-source 7B instruction model",
+  model: "mistralai/mistral-7b-instruct:free",
+  icon: <MistralLogo />,
+  color: "from-blue-500 to-indigo-600",
+  bgColor: "bg-blue-500/10",
+  premium: false,
+},
+
   {
-    id: 'claude-4-sonnet',
-    name: 'Anthropic',
-    provider: 'Claude ai',
-    description: 'Fast and efficient reasoning model',
-    icon: <ClaudeLogo className="w-8 h-8" />,
-    color: 'from-cyan-500 to-blue-600',
-    bgColor: 'bg-cyan-500/10'
-  },
-  {
-    id: 'gemini-2.5',
-    name: 'Google',
-    provider: 'Gemini',
-    description: 'Multimodal reasoning capabilities',
-    icon: <GeminiLogo className="w-8 h-8" />,
-    color: 'from-emerald-500 to-teal-600',
-    bgColor: 'bg-emerald-500/10'
-  },
-  {
-    id: 'deepseek',
-    name: 'DeepSeek',
-    provider: 'DeepSeek',
-    description: 'Advanced reasoning and coding',
+    id: "deepseek",
+    name: "DeepSeek Chat",
+    provider: "DeepSeek",
+    description: "Free version of DeepSeek",
     icon: <DeepSeekLogo className="w-8 h-8" />,
-    color: 'from-rose-500 to-pink-600',
-    bgColor: 'bg-rose-500/10'
+    color: "from-rose-500 to-pink-600",
+    bgColor: "bg-rose-500/10",
+    premium: false,
   },
+
   {
-    id: 'perplexity',
-    name: 'Perplexity',
-    provider: 'Perplexity AI',
-    description: 'Web-connected, up-to-date answers',
-    icon: <PerplexityLogo className="w-8 h-8" />,
-    color: 'from-blue-500 to-indigo-600',
-    bgColor: 'bg-blue-500/10'
+    id: "gemini-free",
+    name: "Google Gemini",
+    provider: "Google",
+    description: "Free Gemini model",
+    icon: <GeminiLogo className="w-8 h-8" />,
+    color: "from-emerald-500 to-teal-600",
+    bgColor: "bg-emerald-500/10",
+    premium: false,
   },
+
   {
-    id: 'grok',
-    name: 'Grok',
-    provider: 'xAI',
-    description: 'Conversational AI by xAI',
+  id: "meta",
+  name: "Meta LLaMA",
+  provider: "Meta AI",
+  description: "Free Meta LLaMA model",
+  icon: <LlamaLogo />,
+  color: "from-purple-500 to-pink-500",
+  bgColor: "bg-purple-500/10",
+  premium: false,
+},
+
+{
+  id: "qwen",
+  name: "Qwen",
+  provider: "Alibaba",
+  description: "Qwen 2.5 7B instruction model",
+  icon: <QwenLogo />,
+  color: "from-green-500 to-emerald-600",
+  bgColor: "bg-green-500/10",
+  premium: false,
+  model: "qwen/qwen2.5-7b-instruct"
+},
+
+  // -----------------------
+  // PREMIUM MODELS (LOCKED)
+  // -----------------------
+
+  {
+    id: "gpt-5",
+    name: "ChatGPT GPT-5",
+    provider: "OpenAI",
+    description: "Advanced OpenAI model",
+    icon: (darkMode: boolean) => <GPTLogo className="w-8 h-8" darkMode={darkMode} />,
+    color: "from-violet-500 to-purple-600",
+    bgColor: "bg-violet-500/10",
+    premium: true,
+  },
+
+  {
+    id: "claude-4-sonnet",
+    name: "Claude 4 Sonnet",
+    provider: "Anthropic",
+    description: "Premium Claude model",
+    icon: <ClaudeLogo className="w-8 h-8" />,
+    color: "from-cyan-500 to-blue-600",
+    bgColor: "bg-cyan-500/10",
+    premium: true,
+  },
+
+  {
+    id: "gemini-pro",
+    name: "Gemini Pro",
+    provider: "Google",
+    description: "Premium Google Gemini model",
+    icon: <GeminiLogo className="w-8 h-8" />,
+    color: "from-green-500 to-teal-600",
+    bgColor: "bg-green-500/10",
+    premium: true,
+  },
+
+  {
+    id: "deepseek-pro",
+    name: "DeepSeek Pro",
+    provider: "DeepSeek",
+    description: "Premium DeepSeek model",
+    icon: <DeepSeekLogo className="w-8 h-8" />,
+    color: "from-red-600 to-rose-700",
+    bgColor: "bg-red-500/10",
+    premium: true,
+  },
+
+  {
+  id: "perplexity",
+  name: "Perplexity",
+  provider: "Perplexity AI",
+  description: "Web-connected premium reasoning model",
+  icon: <PerplexityLogo />,
+  color: "from-blue-500 to-indigo-600",
+  bgColor: "bg-blue-500/10",
+  premium: true,
+},
+
+  {
+    id: "grok",
+    name: "Grok",
+    provider: "xAI",
+    description: "Premium xAI model",
     icon: <GrokLogo className="w-8 h-8" />,
-    color: 'from-orange-500 to-yellow-600',
-    bgColor: 'bg-orange-500/10'
-  }
+    color: "from-orange-500 to-yellow-600",
+    bgColor: "bg-orange-500/10",
+    premium: true,
+  },
 ];
+
+
 
 
 
@@ -221,31 +352,38 @@ export default function Home() {
   const { darkMode, toggleDarkMode, mounted } = useTheme();
   const [selectedModels, setSelectedModels] = useState<string[]>(AI_MODELS.map(m => m.id));
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [modelPlan, setModelPlan] = useState<'free' | 'premium'>('free');
+  const [showModelMenu, setShowModelMenu] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
 
-  type ModelKey = 'chatgpt' | 'gemini' | 'deepseek' | 'perplexity' | 'anthropic' | 'xai';
+type ModelKey = 'gpt-5' | 'claude-4-sonnet' | 'gemini-2.5' | 'deepseek' | 'perplexity' | 'grok';
 
 interface ModelPreferences {
-  chatgpt: boolean;
-  gemini: boolean;
-  deepseek: boolean;
-  perplexity: boolean;
-  anthropic: boolean;
-  xai: boolean;
+  'gpt-5': boolean;
+  'claude-4-sonnet': boolean;
+  'gemini-2.5': boolean;
+  'deepseek': boolean;
+  'perplexity': boolean;
+  'grok': boolean;
 }
 
 const [modelPrefs, setModelPrefs] = useState<ModelPreferences>({
-  chatgpt: true,
-  gemini: true,
-  deepseek: true,
-  perplexity: true,
-  anthropic: true,
-  xai: true,
+  'gpt-5': true,
+  'claude-4-sonnet': true,
+  'gemini-2.5': true,
+  'deepseek': true,
+  'perplexity': true,
+  'grok': true,
 });
 
   const [responses, setResponses] = useState<ModelResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
+  const [showHistory, setShowHistory] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -365,6 +503,25 @@ useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserDropdown]);
+
+useEffect(() => {
+  // Load saved preferences from localStorage
+  const savedPrefs = localStorage.getItem('modelPreferences');
+  if (savedPrefs) {
+    try {
+      const parsed = JSON.parse(savedPrefs);
+      setModelPrefs(parsed);
+      
+      // Update selected models based on loaded preferences
+      const enabledModels = AI_MODELS
+        .filter(model => parsed[model.id as ModelKey])
+        .map(model => model.id);
+      setSelectedModels(enabledModels);
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  }
+}, []);
   
   // Load recent chat sessions
   useEffect(() => {
@@ -388,45 +545,52 @@ const loadRecentSessions = async () => {
       .order('updated_at', { ascending: false })
       .limit(10);
 
-    if (error) throw error;
+    // FIXED: Throw a real Error with message
+    if (error) {
+      throw new Error(`Failed to load sessions: ${error.message}`);
+    }
+
     if (!sessions || sessions.length === 0) {
       setRecentSessions([]);
       return;
     }
 
     const sessionsWithFirstMessage = await Promise.all(
-      sessions.map(async (session: any) => {
-        const { data: messageData } = await supabase
+      sessions.map(async (session) => {
+        const { data: messageData, error: msgError } = await supabase
           .from('messages')
           .select('content')
           .eq('session_id', session.id)
           .order('created_at', { ascending: true })
           .limit(1);
 
-        const firstMsg = messageData && messageData.length > 0 ? messageData[0].content : 'New conversation';
+        if (msgError) {
+          console.warn('Could not fetch first message for session', session.id, msgError);
+        }
+
+        const firstMsg = messageData?.[0]?.content || 'New conversation';
 
         const updatedAt = new Date(session.updated_at);
         const now = new Date();
-        let dateDisplay = '';
-        if (updatedAt.toDateString() === now.toDateString()) {
-          dateDisplay = 'Today';
-        } else {
-          dateDisplay = updatedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
+        const dateDisplay =
+          updatedAt.toDateString() === now.toDateString()
+            ? 'Today'
+            : updatedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
         return {
           id: session.id,
           title: session.title || 'New conversation',
           firstMessage: firstMsg,
           date: dateDisplay,
-          messages: messageData || []  // This is correct
+          messages: messageData || [],
         };
       })
     );
 
     setRecentSessions(sessionsWithFirstMessage);
-  } catch (error) {
-    console.error('Error loading recent sessions:', error);
+  } catch (error: any) {
+    // Now you'll see the REAL error message!
+    console.error('Error loading recent sessions:', error.message || error);
     setRecentSessions([]);
   }
 };
@@ -561,49 +725,50 @@ const loadRecentSessions = async () => {
     );
   };
 
-  const createNewSession = async () => {
-    if (!user) return null;
-    
-    try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .insert({
-          user_id: user.id,
-          title: 'New Chat'
-        })
-        .select()
-        .single();
+ const createNewSession = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("sessions")
+      .insert([{ title: "New Chat" }])
+      .select()
+      .single();
 
-      if (error) throw error;
-      return data.id;
-    } catch (error) {
-      console.error('Error creating session:', error);
-      return null;
-    }
-  };
+    if (error) throw error;
 
-  const saveMessageToDatabase = async (message: Message, sessionId: string) => {
-    if (!user) return null;
-    
-    try {
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .insert({
-          session_id: sessionId,
-          user_id: user.id,
-          content: message.content,
-          role: message.role
-        })
-        .select()
-        .single();
+    return data;
+  } catch (error) {
+    console.error("🔥 Error creating session:", error);
+    return null;
+  }
+};
 
-      if (error) throw error;
-      return data.id;
-    } catch (error) {
-      console.error('Error saving message:', error);
-      return null;
-    }
-  };
+
+const saveMessageToDatabase = async (message: Message, sessionId: string) => {
+  if (!user) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .insert({
+        session_id: sessionId,
+        user_id: user.id,
+        role: message.role,       // ✔ this column exists
+        content: message.content  // ✔ this column exists
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data.id;  // 👍 this is valid
+
+  } catch (error) {
+    console.error("🔥 Error saving message:", error);
+    return null;
+  }
+};
+
+
 
   const saveModelResponseToDatabase = async (messageId: string, modelId: string, content: string, isBest: boolean = false) => {
     try {
@@ -628,6 +793,31 @@ const loadRecentSessions = async () => {
     setCurrentInput('');
     setSelectedModels(AI_MODELS.map(m => m.id));
     setCurrentSessionId(null);
+     loadRecentSessions();
+    
+const session = await createNewSession();
+  setCurrentSessionId(session.id);
+
+const handleUpdatePreferences = async () => {
+  try {
+    
+    // Update selected models based on preferences
+    const enabledModels = AI_MODELS
+      .filter(model => modelPrefs[model.id as ModelKey])
+      .map(model => model.id);
+    
+    setSelectedModels(enabledModels);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('modelPreferences', JSON.stringify(modelPrefs));
+    
+    alert('Model preferences updated successfully!');
+    setShowSettings(false);
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+    alert('Failed to update preferences');
+  }
+};
     
     // Refresh recent sessions list
     loadRecentSessions();
@@ -663,9 +853,11 @@ const loadRecentSessions = async () => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if ((!currentInput.trim() && attachedFiles.length === 0) || selectedModels.length === 0 || !user) return;
+ const handleSendMessage = async () => {
+  if ((!currentInput.trim() && attachedFiles.length === 0) || selectedModels.length === 0 || !user) return;
 
+
+  
     // Create message content - include file information if files are attached
     let messageContent = currentInput;
     if (attachedFiles.length > 0) {
@@ -833,62 +1025,58 @@ if (attachedFiles.length > 0) {
     setShowPhotoOptions(false);
   };
 
-  // Show auth form if not logged in
   if (!user) {
-    return (
-      <div className={cn(
-        "min-h-screen flex items-center justify-center p-6 transition-colors duration-300",
-        darkMode ? "bg-slate-900" : "bg-white"
-      )}>
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <SparklesIcon className="w-8 h-8 text-white" />
-            </div>
-            <h1 className={cn(
-              "text-3xl font-bold mb-2",
-              darkMode ? "text-white" : "text-slate-900"
-            )}>MultiMind</h1>
-            <p className={cn(
-              darkMode ? "text-slate-400" : "text-slate-600"
-            )}>Sign in to continue</p>
-          </div>
-
-          {/* Auth Form */}
-          <div className={cn(
-            "rounded-2xl p-8 backdrop-blur-xl border transition-colors duration-300",
-            darkMode 
-              ? "bg-slate-800/80 border-slate-700/50" 
-              : "bg-white/90 border-slate-200/50"
-          )}>
-            <div className="text-center">
-              <p className={cn(
-                "mb-6",
-                darkMode ? "text-slate-400" : "text-slate-600"
-              )}>Please sign in to use MultiMind</p>
-              <Link
-                href="/auth"
-                className="inline-block bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-xl py-3 px-6 font-medium hover:from-violet-700 hover:to-purple-800 transition-all duration-200"
-              >
-                Sign In / Sign Up
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
- function handleUpdatePreferences(e: React.MouseEvent<HTMLButtonElement>) {
-  throw new Error("Function not implemented.");
+  return <LandingPage />;
 }
 
+
+const handleUpdatePreferences = async () => {
+  try {
+    // Update selected models based on preferences
+    const enabledModels = AI_MODELS
+      .filter(model => modelPrefs[model.id as ModelKey])
+      .map(model => model.id);
+    
+    setSelectedModels(enabledModels);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('modelPreferences', JSON.stringify(modelPrefs));
+    
+    // Show toast notification
+    ('Model preferences updated successfully!');
+    setShowToast(true);
+    setShowSettings(false);
+    
+    // Hide toast after 1 second
+    setTimeout(() => {
+      setShowToast(false);
+    }, 1000);
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+  ('Failed to update preferences');
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 1000);
+  }
+};
+
+ 
+
+
+
+
   return (
-    <div className={cn(
-      "min-h-screen transition-colors duration-300",
-      darkMode ? "bg-[#202124] text-white" : "bg-[#FBF9F6] text-gray-900"
-    )}>
+/* ------------------ THEME: main wrapper (paste in place of the old wrapper) ------------------ */
+<div
+  className={cn(
+    "flex flex-col lg:flex-row w-full h-screen overflow-hidden transition-colors duration-300",
+    darkMode
+      ? "bg-black text-white"
+      : "bg-white text-black"
+  )}
+>
+
       {/* Mobile Hamburger Menu */}
       {isMobile && (
         <button
@@ -948,8 +1136,8 @@ if (attachedFiles.length > 0) {
               className={cn(
                 "p-2 rounded-lg transition-colors mr-2",
                 darkMode 
-                  ? "text-gray-400 hover:text-white hover:bg-slate-700/50" 
-                  : "text-gray-600 hover:text-slate-800 hover:bg-slate-200/50"
+                  ? "bg-black text-white"
+                  : "bg-white text-black"
               )}
               title={darkMode ? "Light Mode" : "Dark Mode"}
             >
@@ -960,168 +1148,138 @@ if (attachedFiles.length > 0) {
         
 
 
-        {/* New Chat Button */}
-        {/* New Chat, History & Search */}
-<div
-  className={cn(
-    "flex gap-2 mb-6",
-    sidebarCollapsed ? "flex-col" : "flex-row mr-2"
-  )}
->
-  {/* New Chat */}
-  <button
-    onClick={handleNewChat}
-    className={cn(
-      "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg",
-      sidebarCollapsed ? "w-full px-2" : "flex-1 px-4"
-    )}
-  >
-    <Plus className="w-4 h-4" />
-    {!sidebarCollapsed && <span>New Chat</span>}
-  </button>
+        {/* Sidebar Actions (Vertical List) */}
+<div className="flex flex-col gap-4">
 
-  {/* History */}
-  <Link
-    href="/history"
-    className={cn(
-      "bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg",
-      sidebarCollapsed ? "w-full px-2" : "flex-1 px-4"
-    )}
-  >
-    <History className="w-4 h-4" />
-    {!sidebarCollapsed && <span>History</span>}
-  </Link>
+  {/* Search Bar */}
+  <div className="relative">
+    <input
+      type="text"
+      placeholder="Search..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      className={cn(
+        "w-full pl-10 pr-4 py-3 rounded-xl text-sm",
+        darkMode ? "bg-slate-700 text-white" : "bg-slate-200 text-black"
+      )}
+    />
+    <span className="absolute left-3 top-1/2 -translate-y-1/2">
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+          d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+      </svg>
+    </span>
+  </div>
+
+  {/* MENU ITEMS */}
+<div className="mt-4 space-y-2"></div>
+
+   {/* New Chat */}
+  <div 
+  onClick={handleNewChat}
+  className="flex items-center gap-3 cursor-pointer px-4 py-2 group hover:bg-slate-700 rounded-lg"
+>
+  <PlusIcon className="w-6 h-6 text-gray-300" />
+  {!sidebarCollapsed && (
+    <span className="text-gray-200">New Chat</span>
+  )}
 </div>
 
-{/* Search Bar - AI Fiesta Style */}
-{!sidebarCollapsed && (
-  <div className="mb-6 px-3">
-    <div className={cn(
-      "relative rounded-xl transition-all duration-200",
-      darkMode 
-        ? "bg-slate-700/60 hover:bg-slate-700/80 focus-within:bg-slate-700/80" 
-        : "bg-slate-100/80 hover:bg-slate-200/80 focus-within:bg-slate-200/80"
-    )}>
-      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-        <svg 
-          className={cn(
-            "w-4 h-4 transition-colors",
-            darkMode ? "text-slate-400" : "text-slate-500"
-          )} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
-        </svg>
-      </div>
-      <input
-        type="text"
-        placeholder="Type here to search..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+  {/* History */}
+  <div
+    onClick={() => setShowHistory(true)}
+    className={cn(
+      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+    )}
+  >
+    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    {!sidebarCollapsed && (
+  <span className="text-sm">History</span>
+)}
+
+  </div>
+
+</div>
+
+
+{/* Create Project */}
+<div
+  onClick={() => setIsProjectModalOpen(true)}
+    className={cn(
+      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+    )}
+>
+  <Plus className="w-4 h-4 rotate-45 text-slate-400" />
+  {!sidebarCollapsed && <span className="text-sm">Create Project</span>}
+</div>
+
+           {/* Models */}
+<div
+  onClick={() => setShowModelMenu(!showModelMenu)}
+    className={cn(
+      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+    )}
+>
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+  {!sidebarCollapsed && <span className="text-sm">Models</span>}
+</div>
+{/* Models submenu */}
+{showModelMenu && !sidebarCollapsed && (
+  <div className="ml-10 mt-1 flex flex-col gap-1">
+    <div
+      onClick={() => { setModelPlan("free"); setSelectedModels(FREE_MODELS); }}
+       className={cn(
+      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+    )}
+    >
+  Free Models
+    </div>
+    <div
+      onClick={() => { setModelPlan("premium"); setSelectedModels(PREMIUM_MODELS); }}
         className={cn(
-          "w-full bg-transparent border-0 pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-0 placeholder:transition-colors",
-          darkMode 
-            ? "text-white placeholder-slate-400" 
-            : "text-slate-900 placeholder-slate-500"
-        )}
-      />
-      {searchQuery && (
-        <button
-          onClick={() => setSearchQuery('')}
-          className="absolute inset-y-0 right-3 flex items-center"
-        >
-          <X className={cn(
-            "w-4 h-4 transition-colors",
-            darkMode ? "text-slate-400 hover:text-slate-300" : "text-slate-500 hover:text-slate-700"
-          )} />
-        </button>
+      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+    )}
+    >
+      Premium Models
+    </div>
+  </div>
+)}
+          {/* Recent Chats */}
+{!sidebarCollapsed && (
+  <div className="px-3 mt-6">
+    <h3 className="text-xs text-slate-400 mb-2">Recent Chats</h3>
+
+    <div className="space-y-1 max-h-[45vh] overflow-y-auto pr-2">
+      {filteredSessions.length > 0 ? (
+        filteredSessions.map((session) => (
+          <div
+            key={session.id}
+              className={cn(
+      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+    )}
+            onClick={() => loadChatSession(session.id)}
+          >
+            <p className="text-sm text-white truncate">{session.title}</p>
+            <p className="text-xs text-slate-700 truncate">{session.firstMessage}</p>
+          </div>
+        ))
+      ) : (
+        <p className="text-slate-500 text-xs text-center py-4">No conversations yet</p>
       )}
     </div>
   </div>
 )}
-
-{/* Create Project Button */}
-{!sidebarCollapsed && (
-  <div className="px-3 mb-4">
-    <button
-      onClick={() => setIsProjectModalOpen(true)}
-      className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] shadow-md"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" 
-           fill="none" 
-           viewBox="0 0 24 24" 
-           strokeWidth={2} 
-           stroke="currentColor" 
-           className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-      </svg>
-      Create Project
-    </button>
-  </div>
-)}
-
-
-          {/* Recent Chats */}
-          {!sidebarCollapsed && (
-            <div className="mb-6 flex flex-col" style={{ height: 'calc(100vh - 300px)' }}>
-              <h3 className={cn(
-                "text-sm font-medium mb-3 flex-shrink-0 px-3",
-                darkMode ? "text-gray-300" : "text-gray-700"
-              )}>Recent Chats</h3>
-              <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 pr-6">
-                <div className="space-y-1">
-                 {filteredSessions.length > 0 ? (
-                <div>
-    {filteredSessions.map((session) => (
-
-                        <div 
-                          key={session.id} 
-                          className={cn(
-                            "py-3 px-3 cursor-pointer transition-colors border-l-2 flex flex-col",
-                            darkMode 
-                              ? currentSessionId === session.id
-                                ? "bg-gray-700 border-l-white"
-                                : "hover:bg-gray-800 border-l-transparent" 
-                              : currentSessionId === session.id
-                                ? "bg-gray-100 border-l-gray-800"
-                                : "hover:bg-gray-50 border-l-transparent"
-                          )}
-                          onClick={() => loadChatSession(session.id)}
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className={cn(
-                              "text-sm font-medium truncate flex-1",
-                              darkMode ? "text-gray-200" : "text-gray-800"
-                            )}>{session.title}</span>
-                            <span className={cn(
-                              "text-xs",
-                              darkMode ? "text-gray-400" : "text-gray-500"
-                            )}>{session.date}</span>
-                          </div>
-                          <p className={cn(
-                            "text-xs truncate",
-                            darkMode ? "text-gray-400" : "text-gray-500"
-                          )}>
-                            {session.firstMessage}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className={cn(
-                      "text-center py-4",
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    )}>
-                      <p className="text-sm">No conversations yet</p>
-                      <p className="text-xs">Start chatting to see history here</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Settings Section */}
           <div className={cn(
@@ -1288,40 +1446,38 @@ if (attachedFiles.length > 0) {
               </div>
             )}
 
-            {/* Chat Columns */}
-            <div className={cn(
-              "overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50",
-              isMobile ? "h-screen pt-16 pb-24" : "h-[calc(100vh-70px)] pb-20"
-            )}>
-              <div className="flex h-full">
-              {AI_MODELS.map((model) => {
+          
+
+
+{/* --------- MODELS HORIZONTAL SCROLL AREA ---------- */}
+<div className="w-full overflow-x-auto whitespace-nowrap py-3">
+  <div className="flex flex-row gap-4 px-4 min-w-max">
+
+
+
+              {AI_MODELS.filter(m =>
+  modelPlan === 'free'
+    ? FREE_MODELS.includes(m.id)
+    : PREMIUM_MODELS.includes(m.id)
+).map((model) => {
                 const modelId = model.id;
-                const isSelected = selectedModels.includes(modelId);
+                const isSelected = selectedModels.includes(modelId) && !(PREMIUM_MODELS.includes(modelId) && modelPlan !== 'premium');
                 const response = responses.find(r => r.modelId === modelId);
                 const hasMessages = messages.length > 0;
                 
-                return (
-                  <div
-                    key={modelId}
-                    className={cn(
-                      "rounded-md border flex flex-col backdrop-blur-sm transition-all duration-300",
-                      isSelected 
-                        ? darkMode 
-                          ? isMobile 
-                            ? "bg-slate-800 border-slate-600 shadow-xl hover:shadow-2xl w-[90vw] h-full" 
-                            : "bg-slate-800 border-slate-600 shadow-xl hover:shadow-2xl w-[600px] h-full"
-                          : isMobile 
-                            ? "bg-white border-slate-300 shadow-xl hover:shadow-2xl w-[90vw] h-full"
-                            : "bg-white border-slate-300 shadow-xl hover:shadow-2xl w-[600px] h-full"
-                        : darkMode 
-                          ? isMobile 
-                            ? "bg-black border-gray-800 p-0 w-[60px]" 
-                            : "bg-black border-gray-800 p-0 w-[40px]"
-                          : isMobile 
-                            ? "bg-white/50 border-slate-300/50 p-0 w-[60px]"
-                            : "bg-white/50 border-slate-300/50 p-0 w-[40px]"
-                    )}
-                  >
+               return (
+  <div
+    key={modelId}
+    className={cn(
+      "rounded-2xl shadow-lg border flex flex-col transition-all duration-300",
+      "min-w-[330px] max-w-[330px] h-[480px] p-0",
+      darkMode
+        ? "bg-[#1A1A1A] border-[#333]"
+        : "bg-[#FAFAFA] border-[#DDD]"
+    )}
+  >
+    
+
                     {/* Model Header */}
                     <div className={cn(
                       "mb-6",
@@ -1350,9 +1506,17 @@ if (attachedFiles.length > 0) {
                             </div>
                           </div>
                           
+                          
                           {/* Toggle Switch - Deselect Model */}
                           <button 
-                            onClick={() => handleModelToggle(modelId)}
+                            onClick={() => {
+  if (modelPlan === 'free' && PREMIUM_MODELS.includes(modelId)) {
+    setShowSubscribeModal(true);
+    return;
+  }
+  handleModelToggle(modelId);
+}}
+
                             className={cn(
                               "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 bg-black border border-slate-700",
                             )}
@@ -1366,10 +1530,18 @@ if (attachedFiles.length > 0) {
                       ) : (
                         <div className="flex flex-col items-center justify-center gap-4 h-full">
                           <div className="flex items-center justify-center w-8 h-8">
-                            {typeof model?.icon === 'function' ? model.icon(darkMode) : model?.icon}
                           </div>
+                          
                           <button 
-                            onClick={() => handleModelToggle(modelId)}
+                           
+                            onClick={() => {
+  if (PREMIUM_MODELS.includes(modelId)) {
+    setShowSubscribeModal(true);
+    return;
+  }
+  handleModelToggle(modelId);
+}}
+
                             className="w-6 h-6 flex items-center justify-center"
                             title="Select Model"
                           >
@@ -1381,14 +1553,18 @@ if (attachedFiles.length > 0) {
                       )}
                     </div>
 
+                    
+
                     {/* Chat Content */}
                     <div className={cn(
                       "flex-1 transition-opacity duration-300 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50",
                       isSelected ? "" : "hidden"
                     )}>
+
                       <div className="space-y-4 px-8 py-4">
                       {hasMessages && isSelected && (
                         <div className="space-y-6">
+
                           {/* Display messages filtered for this specific model */}
                           {messages.filter(message => 
                             message.role === 'user' || message.modelId === modelId
@@ -1701,6 +1877,44 @@ if (attachedFiles.length > 0) {
 
       <div ref={messagesEndRef} />
 
+{showHistory && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-md border border-slate-600 shadow-xl">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-white">Chat History</h2>
+        <button onClick={() => setShowHistory(false)}>
+          <X className="w-5 h-5 text-white" />
+        </button>
+      </div>
+
+      {/* Sessions List */}
+      <div className="max-h-[60vh] overflow-y-auto space-y-2">
+        {recentSessions.length === 0 ? (
+          <p className="text-slate-400 text-sm text-center py-10">
+            No history found
+          </p>
+        ) : (
+          recentSessions.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => {
+                loadChatSession(s.id);
+                setShowHistory(false);
+              }}
+              className="p-3 bg-slate-700 rounded-lg cursor-pointer hover:bg-slate-600 transition text-white"
+            >
+              <p className="font-medium truncate">{s.title}</p>
+              <p className="text-sm text-slate-300 truncate">{s.firstMessage}</p>
+              <p className="text-xs text-slate-500">{s.date}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 
       {/* Settings Modal */}
@@ -1755,63 +1969,68 @@ if (attachedFiles.length > 0) {
                 {passwordLoading ? 'Updating...' : 'Update Password'}
               </button>
 
-              {/* Model Preferences Section */}
-<div className="mt-8 bg-slate-800 rounded-xl p-5 border border-slate-700 max-h-[45vh] overflow-y-auto custom-scrollbar">
-  <h3 className="text-lg font-semibold mb-4 text-white sticky top-0 bg-slate-800 pb-2">
-    Model Preferences
+                {/* Model Preferences Section */}
+<div className="mt-8 bg-slate-900/50 rounded-xl p-5 border border-slate-700 max-h-[45vh] overflow-y-auto custom-scrollbar">
+  <h3 className="text-lg font-semibold mb-4 text-white sticky top-0 bg-slate-900/50 pb-2 backdrop-blur-sm">
+    Customize your chat AI model preferences
   </h3>
+  <p className="text-sm text-slate-400 mb-4">
+    Easily update your selections anytime in the settings
+  </p>
 
   <div className="space-y-3">
-    {[
-      { name: "ChatGPT", key: "chatgpt", logo: "/logos/chatgpt.svg" },
-      { name: "Gemini", key: "gemini", logo: "/logos/gemini.svg" },
-      { name: "DeepSeek", key: "deepseek", logo: "/logos/deepseek.svg" },
-      { name: "Perplexity", key: "perplexity", logo: "/logos/perplexity.svg" },
-      { name: "Anthropic", key: "anthropic", logo: "/logos/anthropic.svg" },
-      { name: "xAI", key: "xai", logo: "/logos/xai.svg" },
-    ].map((model) => (
+    {AI_MODELS.map((model) => (
       <div
-        key={model.key}
-        className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-700 hover:border-slate-500 transition"
+        key={model.id}
+        className="flex items-center justify-between bg-slate-800/80 p-4 rounded-xl border border-slate-700 hover:border-slate-600 transition"
       >
-        {/* Left Side (Logo + Name) */}
-        <div className="flex items-center gap-3">
-          <img
-            src={model.logo}
-            alt={model.name}
-            className="w-6 h-6 rounded-md object-contain"
-          />
-          <span className="text-sm text-gray-300">{model.name}</span>
+        {/* Left Side (Logo + Name + Description) */}
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-10 h-10 flex items-center justify-center">
+            {typeof model.icon === 'function' ? model.icon(darkMode) : model.icon}
+          </div>
+          <div>
+            <span className="text-sm font-medium text-white">{model.name}</span>
+            <p className="text-xs text-slate-400">{model.description}</p>
+          </div>
         </div>
 
- <button
-  type="button"
-  onClick={() =>
-    setModelPrefs((prev) => ({
-      ...prev,
-      [model.key as ModelKey]: !prev[model.key as ModelKey],
-    }))
+        {/* Toggle Switch */}
+        <button
+          type="button"
+          onClick={() => {
+  // If model is premium → block toggle
+  if (model.premium) {
+    setShowSubscribeModal(true);
+    return;
   }
-  className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
-    modelPrefs[model.key as ModelKey] ? "bg-green-500" : "bg-slate-600"
-  }`}
->
-  <span
-    className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transform transition-transform duration-300 ${
-      modelPrefs[model.key as ModelKey] ? "translate-x-6" : ""
-    }`}
-  />
-</button>
+
+  // Otherwise allow toggle
+  setModelPrefs((prev) => ({
+    ...prev,
+    [model.id as ModelKey]: !prev[model.id as ModelKey],
+  }));
+}}
+
+          className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
+            modelPrefs[model.id as ModelKey] ? "bg-violet-600" : "bg-slate-600"
+          }`}
+        >
+          <span
+            className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transform transition-transform duration-300 ${
+              modelPrefs[model.id as ModelKey] ? "translate-x-6" : ""
+            }`}
+          />
+        </button>
       </div>
     ))}
   </div>
 
-  
   <button
     onClick={handleUpdatePreferences}
-    className="mt-5 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium py-2 rounded-lg hover:opacity-90 transition"
+    className="mt-5 w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-medium py-3 rounded-lg hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg"
   >
-    Update Preferences
+    Update preferences
   </button>
 </div>
 
@@ -1834,6 +2053,9 @@ if (attachedFiles.length > 0) {
 </div>
 </div>
 )}
+
+
+
 
 {/* ✅ Project Creation Modal */}
 {isProjectModalOpen && (
@@ -1882,8 +2104,55 @@ if (attachedFiles.length > 0) {
     </div>
   </div>
 )}
+       {/* option B */}
+{showSubscribeModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white rounded-2xl p-6 w-96 shadow-lg text-center">
+
+      <h2 className="text-2xl font-bold mb-2">Upgrade your plan</h2>
+      <p className="text-gray-600 mb-4">Get access to all premium AI models:</p>
+
+      <ul className="text-left text-gray-700 mb-4 space-y-1">
+        <li>✔ ChatGPT (GPT-5)</li>
+        <li>✔ Claude</li>
+        <li>✔ Google Gemini</li>
+        <li>✔ Perplexity</li>
+        <li>✔ Grok</li>
+      </ul>
+
+      <p className="text-xl font-semibold mb-5">₹599 / month</p>
+
+      <button className="px-5 py-2.5 bg-purple-600 text-white rounded-xl w-full">
+        Subscribe Now
+      </button>
+
+      <button
+        onClick={() => setShowSubscribeModal(false)}
+        className="mt-3 px-5 py-2.5 bg-gray-300 rounded-xl w-full"
+      >
+        Cancel
+      </button>
+
+    </div>
+  </div>
+)}
+
 
       </div>  
    
   );
 }
+function setModelPrefs(parsed: any) {
+  throw new Error('Function not implemented.');
+}
+
+function setSelectedModels(enabledModels: string[]) {
+  throw new Error('Function not implemented.');
+}
+
+
+
+function setShowToast(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}
+

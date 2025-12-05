@@ -2,306 +2,146 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useTheme } from '@/lib/theme-context';
 import { Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { FcGoogle } from 'react-icons/fc';
-import ModelPreferencesModal from '../components/ModelPreferencesModal';
-import { ChatSession } from '../types';
-import React from 'react';
-
 
 export default function AuthPage() {
-const [isLogin, setIsLogin] = useState(true);
-const [email, setEmail] = useState('');
-const [password, setPassword] = useState('');
-const [fullName, setFullName] = useState('');
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState('');
-const [message, setMessage] = useState('');
-const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
-const { signIn, signUp, resetPassword, signInWithGoogle } = useAuth();
-const { darkMode, mounted } = useTheme();
-const router = useRouter();
-const [showModelModal, setShowModelModal] = useState(false);
-const [selectedModels, setSelectedModels] = useState<string[]>(["gpt-5"]); // default selection
+  const { signIn, signUp, resetPassword, signInWithGoogle } = useAuth();
 
-React.useEffect(() => {
-  const saved = localStorage.getItem("selectedModels");
-  if (saved) {
-    setSelectedModels(JSON.parse(saved));
-  }
-}, []);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setMessage('');
 
+    try {
+      if (isForgotPassword) {
+        const { error } = await resetPassword(email);
+        if (error) throw error;
+        setMessage('Password reset link sent to your email!');
+        setIsForgotPassword(false);
+      } else if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) throw error;
+      } else {
+        const { error } = await signUp(email, password, fullName);
+        if (error) throw error;
+        setMessage('Check your email for the confirmation link!');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const handleSubmit = async (e: React.FormEvent) => {
-e.preventDefault();
-setLoading(true);
-setError('');
-setMessage('');
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed');
+      setLoading(false);
+    }
+  };
 
-try {
-if (isForgotPassword) {
-const { error } = await resetPassword(email);
-if (error) throw error;
-setMessage('Password reset link sent to your email!');
-setIsForgotPassword(false);
-} else if (isLogin) {
-const { error } = await signIn(email, password);
-if (error) throw error;
-router.push('/');
-} else {
-const { error } = await signUp(email, password, fullName);
-if (error) throw error;
-setMessage('Check your email for the confirmation link!');
-}
-} catch (error: unknown) {
-console.error('Auth Error:', error);
+  return (
+    <div className="min-h-screen bg-black text-white relative overflow-hidden flex items-center justify-center">
 
-if (error instanceof Error) {
-setError(error.message);
-} else if (typeof error === 'string') {
-setError(error);
-} else {
-// Supabase often throws { message: "...", status: ... }
-setError((error as any)?.message || 'An unknown error occurred');
-}
-}
-finally {
-setLoading(false);
-}
-}
-const handleGoogleSignIn = async () => {
-setLoading(true);
-setError('');
-try {
-const { error } = await signInWithGoogle();
-if (error) throw error;
-// Supabase will redirect, so no need to push router here
-} catch (error: unknown) {
-setError((error as any)?.message || 'Google sign-in failed');
-} finally {
-setLoading(false);
-}
-};
+      {/* Animated Glowing Orbs – Exact AI Fiesta Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply blur-3xl opacity-50 animate-blob"></div>
+        <div className="absolute top-20 right-0 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply blur-3xl opacity-40 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
+      </div>
 
-const handleSavePreferences = async () => {
-  // Save preferences in localStorage instead of API
-  localStorage.setItem("selectedModels", JSON.stringify(selectedModels));
-  setShowModelModal(false);
+      {/* Floating Glass Card */}
+      <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-3xl p-10 shadow-2xl ring-1 ring-white/20 shadow-purple-500/30">
 
-  // Popup message for 1 second
-  const popup = document.createElement("div");
-  popup.textContent = "✅ Preferences updated successfully";
-  popup.className =
-    "fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fadeInOut";
-  document.body.appendChild(popup);
-  setTimeout(() => popup.remove(), 1000);
-};
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center shadow-2xl shadow-purple-500/60">
+              <Sparkles className="w-12 h-12 text-white" />
+            </div>
+          </div>
 
+          <h1 className="text-center text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-cyan-200">
+            MultiMind
+          </h1>
+          <p className="text-center text-gray-400 mt-3 text-lg">Sign in to continue</p>
 
+          <div className="mt-10 space-y-6">
 
+            {/* Google Button */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/10 border border-white/20 hover:bg-white/20 backdrop-blur-xl text-white font-medium transition-all active:scale-98 shadow-lg hover:shadow-purple-500/40"
+            >
+              <FcGoogle className="w-6 h-6" />
+              Continue with Google
+            </button>
 
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
+              <div className="relative flex justify-center text-sm"><span className="px-4 bg-black text-gray-500">or</span></div>
+            </div>
 
-// Don't render until theme is mounted to prevent hydration issues
-if (!mounted) {
-return <div className="min-h-screen bg-white dark:bg-slate-900"></div>;
-}
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {!isLogin && !isForgotPassword && (
+                <input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required
+                  className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/20 placeholder-gray-500 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/30 outline-none transition" />
+              )}
 
-return (
-<div className={cn(
-"min-h-screen flex items-center justify-center p-6 transition-colors duration-300",
-darkMode ? "bg-slate-900" : "bg-white"
-)}>
-<div className="w-full max-w-md">
-{/* Logo */}
-<div className="text-center mb-8">
-<div className="w-16 h-16 bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-<Sparkles className="w-8 h-8 text-white" />
-</div>
-<h1 className={cn(
-"text-3xl font-bold mb-2",
-darkMode ? "text-white" : "text-slate-900"
-)}>MultiMind</h1>
-<p className={cn(
-darkMode ? "text-slate-400" : "text-slate-600"
-)}>Sign in to continue</p>
-</div>
+              <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/20 placeholder-gray-500 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/30 outline-none transition" />
 
-{/* Auth Form */}
-<div className={cn(
-"rounded-2xl p-8 backdrop-blur-xl border transition-colors duration-300",
-darkMode
-? "bg-slate-800/80 border-slate-700/50"
-: "bg-white/90 border-slate-200/50"
-)}>
-{/* Google Sign In Button */}
-<button
-type="button"
-onClick={handleGoogleSignIn}
-disabled={loading}
-className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 rounded-xl py-3 font-medium text-slate-700 hover:bg-slate-50 mb-6 transition-all duration-200"
->
-<FcGoogle className="w-5 h-5" />
-Sign in with Google
-</button>
+              {!isForgotPassword && (
+                <div className="relative">
+                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
+                    className="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/20 placeholder-gray-500 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/30 outline-none transition" />
+                  {isLogin && (
+                    <button type="button" onClick={() => setIsForgotPassword(true)} className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-purple-400 hover:text-purple-300">
+                      Forgot?
+                    </button>
+                  )}
+                </div>
+              )}
 
-<form onSubmit={handleSubmit} className="space-y-6">
-{!isLogin && !isForgotPassword && (
-<div>
-<label htmlFor="fullName" className={cn(
-"block text-sm font-medium mb-2",
-darkMode ? "text-slate-300" : "text-slate-700"
-)}>
-Full Name
-</label>
-<input
-id="fullName"
-type="text"
-value={fullName}
-onChange={(e) => setFullName(e.target.value)}
-className={cn(
-"w-full rounded-xl px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors duration-300",
-darkMode
-? "bg-slate-700/50 text-white border-slate-600/50 placeholder-slate-400"
-: "bg-slate-50 text-slate-900 border-slate-300/50 placeholder-slate-500"
-)}
-placeholder="Enter your full name"
-required={!isLogin}
-/>
-</div>
-)}
+              {error && <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>}
+              {message && <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm">{message}</div>}
 
-<div>
-<label htmlFor="email" className={cn(
-"block text-sm font-medium mb-2",
-darkMode ? "text-slate-300" : "text-slate-700"
-)}>
-Email
-</label>
-<input
-id="email"
-type="email"
-value={email}
-onChange={(e) => setEmail(e.target.value)}
-className={cn(
-"w-full rounded-xl px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors duration-300",
-darkMode
-? "bg-slate-700/50 text-white border-slate-600/50 placeholder-slate-400"
-: "bg-slate-50 text-slate-900 border-slate-300/50 placeholder-slate-500"
-)}
-placeholder="Enter your email"
-required
-/>
-</div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 shadow-xl active:scale-98 transition-all disabled:opacity-60"
+              >
+                {loading ? "Please wait..." : isForgotPassword ? "Send Reset Link" : isLogin ? "Sign In" : "Create Account"}
+              </button>
+            </form>
 
-{!isForgotPassword && (
-<div>
-<label htmlFor="password" className={cn(
-"block text-sm font-medium mb-2",
-darkMode ? "text-slate-300" : "text-slate-700"
-)}>
-Password
-</label>
-<input
-id="password"
-type="password"
-value={password}
-onChange={(e) => setPassword(e.target.value)}
-className={cn(
-"w-full rounded-xl px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors duration-300",
-darkMode
-? "bg-slate-700/50 text-white border-slate-600/50 placeholder-slate-400"
-: "bg-slate-50 text-slate-900 border-slate-300/50 placeholder-slate-500"
-)}
-placeholder="Enter your password"
-required
-/>
-{isLogin && (
-<div className="mt-2 text-right">
-<button
-type="button"
-onClick={() => {
-setIsForgotPassword(true);
-setError('');
-setMessage('');
-}}
-className={cn(
-"text-sm transition-colors",
-darkMode ? "text-slate-400 hover:text-violet-400" : "text-slate-500 hover:text-violet-600"
-)}
->
-Forgot Password?
-</button>
-</div>
-)}
-</div>
-)}
-
-{error && (
-<div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-<p className="text-red-400 text-sm">{error}</p>
-</div>
-)}
-
-{message && (
-<div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-<p className="text-green-400 text-sm">{message}</p>
-</div>
-)}
-
-<button
-type="submit"
-disabled={loading}
-className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-xl py-3 font-medium hover:from-violet-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
->
-{loading ? 'Loading...' : isForgotPassword ? 'Send Reset Link' : isLogin ? 'Sign In' : 'Sign Up'}
-</button>
-</form>
-         <ModelPreferencesModal
-      open={showModelModal}
-      selected={selectedModels}
-      onChange={setSelectedModels}
-      onClose={() => setShowModelModal(false)}
-      onSave={handleSavePreferences}
-    />
-         
-
-
-<div className="mt-6 text-center space-y-3">
-{isForgotPassword ? (
-<button
-onClick={() => {
-setIsForgotPassword(false);
-setIsLogin(true);
-setError('');
-setMessage('');
-}}
-className={cn(
-"transition-colors",
-darkMode ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-800"
-)}
->
-Back to Sign In
-</button>
-) : (
-<>
-<button
-onClick={() => setIsLogin(!isLogin)}
-className={cn(
-"transition-colors",
-darkMode ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-800"
-)}
->
-{isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-</button>
-</>
-)}
-</div>
-</div>
-</div>
-</div>
-);
+            <p className="text-center mt-8 text-gray-400">
+              {isLogin ? "New here? " : "Already have an account? "}
+              <button type="button" onClick={() => { setIsForgotPassword(false); setIsLogin(!isLogin); }} className="text-purple-400 hover:text-purple-300 font-medium underline underline-offset-4">
+                {isLogin ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

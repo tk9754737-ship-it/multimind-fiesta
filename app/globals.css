@@ -186,11 +186,17 @@ body {
 .animation-delay-4000 { animation-delay: 4s; }
 
 
-/* add to globals.css */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+
+/* Scrollbar visible */
+::-webkit-scrollbar {
+  height: 8px;
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #64748b; /* slate-500 */
+  border-radius: 10px;
 }

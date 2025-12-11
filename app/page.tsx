@@ -725,11 +725,21 @@ const loadRecentSessions = async () => {
     );
   };
 
- const createNewSession = async () => {
+const createNewSession = async () => {
   try {
+    if (!user?.id) {
+      console.error("❌ No user logged in — cannot create session");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from("sessions")
-      .insert([{ title: "New Chat" }])
+      .insert([
+        { 
+          user_id: user.id,       // ✅ REQUIRED
+          title: "New Chat",
+        }
+      ])
       .select()
       .single();
 
@@ -741,6 +751,7 @@ const loadRecentSessions = async () => {
     return null;
   }
 };
+
 
 
 const saveMessageToDatabase = async (message: Message, sessionId: string) => {
@@ -1070,7 +1081,7 @@ const handleUpdatePreferences = async () => {
 /* ------------------ THEME: main wrapper (paste in place of the old wrapper) ------------------ */
 <div
   className={cn(
-    "flex flex-col lg:flex-row w-full h-screen overflow-hidden transition-colors duration-300",
+    "flex flex-col lg:flex-row w-full h-screen overflow transition-colors duration-300",
     darkMode
       ? "bg-black text-white"
       : "bg-white text-black"
@@ -1082,10 +1093,10 @@ const handleUpdatePreferences = async () => {
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className={cn(
-            "fixed top-4 left-4 z-50 p-2 rounded-lg transition-all duration-200",
+            "fixed top-4 left-3 z-30 p-2 rounded-lg transition-all duration-200",
             darkMode 
               ? "bg-slate-800/90 text-white hover:bg-slate-700" 
-              : "bg-white/90 text-gray-900 hover:bg-gray-100",
+              : "bg-white/90 text-black-900 hover:bg-black-100",
             "shadow-lg backdrop-blur-sm"
           )}
        >
@@ -1094,13 +1105,14 @@ const handleUpdatePreferences = async () => {
       )}
       
 <div className={cn(
-        "fixed left-0 top-0 h-full backdrop-blur-xl transition-all duration-300 z-40",
-        darkMode 
-          ? "bg-slate-800/80 border-r border-slate-600" 
-          : "bg-white/90 border-r border-slate-300",
-        sidebarCollapsed ? "w-16" : "w-64",
-        isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
-      )}>
+  "fixed left-0 top-0 h-full transition-all duration-300 z-40",
+  darkMode 
+    ? "bg-black border-r border-slate-700" 
+    : "bg-white border-r border-slate-300",
+  sidebarCollapsed ? "w-16" : "w-64",
+  isMobile && sidebarCollapsed ? "-translate-x-full" : "translate-x-0"
+)}>
+
                 <div className={cn(
           "h-full transition-all duration-300 overflow-hidden", 
           sidebarCollapsed ? "p-3" : "pl-6 pr-0 py-6"
@@ -1109,12 +1121,13 @@ const handleUpdatePreferences = async () => {
         {/* Logo and Dark Mode Toggle */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-teal-400 to-purple-600 rounded-lg flex items-center justify-center">
               <SparklesIcon className="w-6 h-6 text-white" />
             </div>
             {!sidebarCollapsed && (
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-500 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 to-purple-600 bg-clip-text text-transparent"
+                >
                   MultiMind
                 </h1>
                 <p className={cn(
@@ -1175,30 +1188,32 @@ const handleUpdatePreferences = async () => {
 <div className="mt-4 space-y-2"></div>
 
    {/* New Chat */}
-  <div 
+<div 
   onClick={handleNewChat}
-  className="flex items-center gap-3 cursor-pointer px-4 py-2 group hover:bg-slate-700 rounded-lg"
+  className="flex items-center gap-3 cursor-pointer px-4 py-2 group hover:bg-slate-500 rounded-lg"
 >
-  <PlusIcon className="w-6 h-6 text-gray-300" />
+  <PlusIcon className="w-6 h-6 text-teal-400" />
   {!sidebarCollapsed && (
-    <span className="text-gray-200">New Chat</span>
+    <span  className="text-sm dark:text-black-700 text-grey">New Chat</span>
+
   )}
 </div>
+
 
   {/* History */}
   <div
     onClick={() => setShowHistory(true)}
     className={cn(
       "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
-      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
-    )}
+     darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+  )}
   >
-    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg  className="w-4 h-4 dark:text-teal-600 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
     {!sidebarCollapsed && (
-  <span className="text-sm">History</span>
+  <span  className="text-sm dark:text-black-900 text-grey">History</span>
 )}
 
   </div>
@@ -1209,69 +1224,125 @@ const handleUpdatePreferences = async () => {
 {/* Create Project */}
 <div
   onClick={() => setIsProjectModalOpen(true)}
-    className={cn(
-      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
-      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
-    )}
+  className={cn(
+    "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+    darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+  )}
 >
-  <Plus className="w-4 h-4 rotate-45 text-slate-400" />
-  {!sidebarCollapsed && <span className="text-sm">Create Project</span>}
+  <Plus 
+    className="w-4 h-4 rotate-90 text-teal-400"
+  />
+  {!sidebarCollapsed && (
+    <span
+      className={cn(
+        "text-sm",
+        darkMode ? "text-white-400" : "text-black"
+      )}
+    >
+      Create Project
+    </span>
+  )}
 </div>
 
-           {/* Models */}
+
+         {/* Models */}
 <div
   onClick={() => setShowModelMenu(!showModelMenu)}
-    className={cn(
-      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
-      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
-    )}
+  className={cn(
+    "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+    darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+  )}
 >
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    className="w-4 h-4 text-teal-400" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    strokeWidth={2} 
+    stroke="currentColor"
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
   </svg>
-  {!sidebarCollapsed && <span className="text-sm">Models</span>}
+  {!sidebarCollapsed && (
+    <span className={cn(
+      "text-sm",
+      darkMode ? "text-white-300" : "text-black"
+    )}>
+      Models
+    </span>
+  )}
 </div>
+
 {/* Models submenu */}
 {showModelMenu && !sidebarCollapsed && (
   <div className="ml-10 mt-1 flex flex-col gap-1">
+
     <div
       onClick={() => { setModelPlan("free"); setSelectedModels(FREE_MODELS); }}
-       className={cn(
-      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
-      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
-    )}
+      className={cn(
+        "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+        darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+      )}
     >
-  Free Models
+      <span className={cn(
+        darkMode ? "text-white-300" : "text-black"
+      )}>
+        Free Models
+      </span>
     </div>
+
     <div
       onClick={() => { setModelPlan("premium"); setSelectedModels(PREMIUM_MODELS); }}
-        className={cn(
-      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
-      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
-    )}
+      className={cn(
+        "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+        darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+      )}
     >
-      Premium Models
+      <span className={cn(
+        darkMode ? "text-white-300" : "text-black"
+      )}>
+        Premium Models
+      </span>
     </div>
+
   </div>
 )}
+
+
           {/* Recent Chats */}
 {!sidebarCollapsed && (
   <div className="px-3 mt-6">
-    <h3 className="text-xs text-slate-400 mb-2">Recent Chats</h3>
+    <h3 className={cn(
+      "text-xs mb-2",
+      darkMode ? "text-white-400" : "text-black"
+    )}>
+      Recent Chats
+    </h3>
 
     <div className="space-y-1 max-h-[45vh] overflow-y-auto pr-2">
       {filteredSessions.length > 0 ? (
         filteredSessions.map((session) => (
           <div
             key={session.id}
-              className={cn(
-      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
-      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
-    )}
+            className={cn(
+              "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+              darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
+            )}
             onClick={() => loadChatSession(session.id)}
           >
-            <p className="text-sm text-white truncate">{session.title}</p>
-            <p className="text-xs text-slate-700 truncate">{session.firstMessage}</p>
+            <p className={cn(
+              "text-sm truncate",
+              darkMode ? "text-white-300" : "text-black"
+            )}>
+              {session.title}
+            </p>
+            <p className={cn(
+              "text-xs truncate",
+              darkMode ? "text-whitel-700" : "text-gray-600"
+            )}>
+              {session.firstMessage}
+            </p>
+
           </div>
         ))
       ) : (
@@ -1280,6 +1351,7 @@ const handleUpdatePreferences = async () => {
     </div>
   </div>
 )}
+
 
           {/* Settings Section */}
           <div className={cn(
@@ -1293,7 +1365,7 @@ const handleUpdatePreferences = async () => {
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
                   className={cn(
-                    "flex items-center gap-2 py-3 bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg flex-grow",
+                    "flex items-center gap-2 py-3 bg-gradient-to-r from-teal-500 to-purple-700 text-white rounded-lg hover:from-black-700 hover:to-purple-800 transition-all duration-200 shadow-lg flex-grow",
                     sidebarCollapsed ? "justify-center px-2" : "px-4"
                   )}
                   title={user?.email || "User Menu"}
@@ -1310,7 +1382,7 @@ const handleUpdatePreferences = async () => {
                   )}>
                     {/* Email ID Header */}
                     <div className="flex items-center gap-3 px-4 py-3 bg-slate-700/50 border-b border-slate-600/50">
-                      <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-purple-600 rounded-full flex items-center justify-center">
                         <User className="w-4 h-4 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1360,7 +1432,7 @@ const handleUpdatePreferences = async () => {
                   <button
                     onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                     className={cn(
-                      "py-3 px-2 bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg"
+                      "py-3 px-2 bg-gradient-to-r from-teal-500 to-purple-700 text-white rounded-lg hover:from-black-700 hover:to-purple-800 transition-all duration-200 shadow-lg"
                     )}
                     title="Collapse Sidebar"
                   >
@@ -1449,33 +1521,40 @@ const handleUpdatePreferences = async () => {
           
 
 
-{/* --------- MODELS HORIZONTAL SCROLL AREA ---------- */}
-<div className="w-full overflow-x-auto whitespace-nowrap py-3">
+<div
+   className="
+    w-full 
+    overflow-x-auto 
+    whitespace-nowrap 
+    scrollbar-thin 
+    scrollbar-thumb-slate-500 
+    scrollbar-track-transparent 
+  "
+  style={{ height: "500px" }}  // 👈 FIX: locks model section height so scroll bar moves up
+>
   <div className="flex flex-row gap-4 px-4 min-w-max">
 
+    {AI_MODELS.filter(m =>
+      modelPlan === 'free'
+        ? FREE_MODELS.includes(m.id)
+        : PREMIUM_MODELS.includes(m.id)
+    ).map((model) => {
+      const modelId = model.id;
+      const isSelected = selectedModels.includes(modelId) && !(PREMIUM_MODELS.includes(modelId) && modelPlan !== 'premium');
+      const response = responses.find(r => r.modelId === modelId);
+      const hasMessages = messages.length > 0;
+      
+      return (
+        <div
+          key={modelId}
+          className={cn(
+            "rounded-2xl shadow-lg border flex flex-col transition-all duration-300",
+            "min-w-[330px] max-w-[330px] h-[480px] p-0",
+            darkMode ? "bg-[#1A1A1A] border-[#333]" : "bg-[#FAFAFA] border-[#DDD]"
+          )}
+        >
+          
 
-
-              {AI_MODELS.filter(m =>
-  modelPlan === 'free'
-    ? FREE_MODELS.includes(m.id)
-    : PREMIUM_MODELS.includes(m.id)
-).map((model) => {
-                const modelId = model.id;
-                const isSelected = selectedModels.includes(modelId) && !(PREMIUM_MODELS.includes(modelId) && modelPlan !== 'premium');
-                const response = responses.find(r => r.modelId === modelId);
-                const hasMessages = messages.length > 0;
-                
-               return (
-  <div
-    key={modelId}
-    className={cn(
-      "rounded-2xl shadow-lg border flex flex-col transition-all duration-300",
-      "min-w-[330px] max-w-[330px] h-[480px] p-0",
-      darkMode
-        ? "bg-[#1A1A1A] border-[#333]"
-        : "bg-[#FAFAFA] border-[#DDD]"
-    )}
-  >
     
 
                     {/* Model Header */}
@@ -1483,6 +1562,8 @@ const handleUpdatePreferences = async () => {
                       "mb-6",
                       isSelected ? "" : "flex flex-col items-center justify-start pt-4 h-full"
                     )}>
+                    
+
                       {isSelected ? (
                         <div className={cn(
                           "flex items-center justify-between w-full transition-all duration-300 px-4 py-3",
@@ -1510,12 +1591,13 @@ const handleUpdatePreferences = async () => {
                           {/* Toggle Switch - Deselect Model */}
                           <button 
                             onClick={() => {
-  if (modelPlan === 'free' && PREMIUM_MODELS.includes(modelId)) {
-    setShowSubscribeModal(true);
+  if (PREMIUM_MODELS.includes(modelId)) {
+    setShowSubscribeModal(true); // show “Upgrade to unlock”
     return;
   }
   handleModelToggle(modelId);
 }}
+
 
                             className={cn(
                               "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 bg-black border border-slate-700",
@@ -1560,9 +1642,27 @@ const handleUpdatePreferences = async () => {
                       "flex-1 transition-opacity duration-300 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50",
                       isSelected ? "" : "hidden"
                     )}>
+{/* 🔒 LOCKED PREMIUM MODEL UI */}
+{PREMIUM_MODELS.includes(modelId) && (
+  <div className="flex flex-col items-center justify-center text-center py-16 px-4">
+    <Lock className="w-10 h-10 text-gray-400 mb-4" />
+    <h2 className="text-lg font-semibold text-gray-300 mb-2">Locked</h2>
+    <p className="text-gray-400 mb-4">Upgrade to unlock this model</p>
+
+    <div className="w-full max-w-xs">
+      <button
+        onClick={() => setShowSubscribeModal(true)}
+        className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-purple-600 text-white font-medium shadow-lg hover:opacity-90 transition"
+      >
+        Upgrade to Unlock
+      </button>
+    </div>
+  </div>
+)}
 
                       <div className="space-y-4 px-8 py-4">
-                      {hasMessages && isSelected && (
+                     {hasMessages && isSelected && !PREMIUM_MODELS.includes(modelId) && (
+
                         <div className="space-y-6">
 
                           {/* Display messages filtered for this specific model */}
@@ -1970,11 +2070,11 @@ const handleUpdatePreferences = async () => {
               </button>
 
                 {/* Model Preferences Section */}
-<div className="mt-8 bg-slate-900/50 rounded-xl p-5 border border-slate-700 max-h-[45vh] overflow-y-auto custom-scrollbar">
-  <h3 className="text-lg font-semibold mb-4 text-white sticky top-0 bg-slate-900/50 pb-2 backdrop-blur-sm">
+<div className="mt-8 bg-slate-900/50 rounded-xl p-7 border border-slate-700 max-h-[45vh] overflow-y-auto custom-scrollbar">
+  <h3 className="text-lg font-semibold mb-7 text-white  top-0 bg-slate-900/50 pb-3 backdrop-blur-sm">
     Customize your chat AI model preferences
   </h3>
-  <p className="text-sm text-slate-400 mb-4">
+  <p className="text-sm text-slate-400 mb-7">
     Easily update your selections anytime in the settings
   </p>
 
@@ -1982,7 +2082,7 @@ const handleUpdatePreferences = async () => {
     {AI_MODELS.map((model) => (
       <div
         key={model.id}
-        className="flex items-center justify-between bg-slate-800/80 p-4 rounded-xl border border-slate-700 hover:border-slate-600 transition"
+        className="flex items-center justify-between bg-slate-800/80 p-6 rounded-xl border border-slate-700 hover:border-slate-600 transition"
       >
         {/* Left Side (Logo + Name + Description) */}
         <div className="flex items-center gap-3 flex-1">

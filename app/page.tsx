@@ -726,30 +726,26 @@ const loadRecentSessions = async () => {
   };
 
 const createNewSession = async () => {
-  try {
-    if (!user?.id) {
-      console.error("❌ No user logged in — cannot create session");
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from("sessions")
-      .insert([
-        { 
-          user_id: user.id,       // ✅ REQUIRED
-          title: "New Chat",
-        }
-      ])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return data;
-  } catch (error) {
-    console.error("🔥 Error creating session:", error);
+  if (!user) {
+    console.error("❌ No user found");
     return null;
   }
+
+  const { data, error } = await supabase
+    .from("chat_sessions")
+    .insert({
+      user_id: user.id,
+      title: "New Chat",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("🔥 Supabase insert error:", error.message);
+    return null;
+  }
+
+  return data;
 };
 
 
@@ -864,7 +860,53 @@ const handleUpdatePreferences = async () => {
     }
   };
 
+  // voice chat
+  const startVoiceInput = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice input not supported in this browser");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setCurrentInput(transcript);
+
+setTimeout(() => {
+  handleSendMessage();
+}, 300);
+
+    };
+
+    recognition.onerror = (event: any) => {
+  // Ignore normal aborts (this is NOT an actual error)
+  if (event.error === "aborted") {
+    return;
+  }
+
+  console.error("Voice error:", event.error);
+};
+
+    recognition.start();
+  };
+
+  const speak = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    speechSynthesis.speak(utterance);
+  };
+
+  
  const handleSendMessage = async () => {
+  console.log("USER:", user);
   if ((!currentInput.trim() && attachedFiles.length === 0) || selectedModels.length === 0 || !user) return;
 
 
@@ -955,6 +997,13 @@ if (attachedFiles.length > 0) {
 
       setResponses(results);
 
+      // 🔊 Speak the AI response
+const firstReply = results.find(r => r.content && !r.error);
+if (firstReply) {
+  speak(firstReply.content);
+}
+
+
       // Save model responses to database
       if (messageId && sessionId) {
         for (const result of results) {
@@ -996,6 +1045,8 @@ if (attachedFiles.length > 0) {
       handleSendMessage();
     }
   };
+
+
   
   // Handle file attachment
   const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1328,7 +1379,7 @@ const handleUpdatePreferences = async () => {
               "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
               darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
             )}
-            onClick={() => loadChatSession(session.id)}
+            onClick={() => loadChatSession(session.id)} 
           >
             <p className={cn(
               "text-sm truncate",
@@ -1945,6 +1996,7 @@ const handleUpdatePreferences = async () => {
                 {/* Right Action Buttons */}
                 <div className="flex items-center gap-1 ml-2">
                   <button 
+                  onClick={startVoiceInput}
                     className={cn(
                       "p-2 transition-all duration-200 rounded-lg hover:scale-105",
                       darkMode 

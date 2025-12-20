@@ -7,12 +7,12 @@ const MODEL_MAPPING: { [key: string]: string } = {
   'gpt-5': 'openai/o1-mini', // Free, good OpenAI-like model
   'claude-4-sonnet': 'mistralai/mistral-7b-instruct:free', // Free Claude-like model
   'google': 'meta-llama/llama-3.1-8b-instruct:free', // Free Llama model (Google slot)
-  'deepseek': 'deepseek/deepseek-v3.2-exp', 
+  'deepseek': 'google/gemma-3-4b-it:free', 
 'perplexity':"perplexity/sonar-reasoning-pro",
   'grok': "mistralai/mistral-medium-3.1" ,
-  "mistral": "mistralai/mistral-7b-instruct:free",
-  "meta-llama": "meta-llama/llama-3.1-8b-instruct:free",
-  "qwen": "qwen/qwen2.5-7b-instruct:free",
+  "mistral": "nex-agi/deepseek-v3.1-nex-n1:free",
+  "meta-llama": "mistralai/mistral-medium-3.1",
+  "qwen": "arcee-ai/trinity-mini:free",
 };
 
 

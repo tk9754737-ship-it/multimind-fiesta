@@ -10,8 +10,8 @@ const MODEL_MAPPING: { [key: string]: string } = {
   'deepseek': 'google/gemma-3-4b-it:free', 
 'perplexity':"perplexity/sonar-reasoning-pro",
   'grok': "mistralai/mistral-medium-3.1" ,
-  "mistral": "nex-agi/deepseek-v3.1-nex-n1:free",
-  "meta-llama": "mistralai/mistral-medium-3.1",
+  "mistral": "arcee-ai/trinity-mini:free",
+  "meta-llama": "meta-llama/llama-3.3-70b-instruct:free",
   "qwen": "arcee-ai/trinity-mini:free",
 };
 

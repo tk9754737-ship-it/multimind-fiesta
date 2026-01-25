@@ -62,7 +62,7 @@ export default function ModelPreferencesModal({
           ))}
         </div>
 
-        <div className="flex space-x-2">
+        <div className="flex space-x-6">
           <button
             onClick={onSave}
             className="flex-1 bg-gradient-to-r from-violet-600 to-purple-700 text-white py-2 px-4 rounded-lg hover:from-violet-700 hover:to-purple-800 transition-all duration-200"

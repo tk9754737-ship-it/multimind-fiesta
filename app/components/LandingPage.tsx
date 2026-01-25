@@ -16,8 +16,8 @@ export default function LandingPage() {
 
          <div className="flex items-center gap-3">
           {/* Your spark logo */}
-          <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center shadow-2xl shadow-purple-500/60">
+          <div className="flex justify-center mb-6">
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center shadow-2xl shadow-purple-500/60">
               <Sparkles className="w-12 h-12 text-white" />
             </div>
           </div>
@@ -53,8 +53,9 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-gray-300 text-lg mb-10 max-w-lg">
-            Compare all leading AI models in real-time.  
-            Text, reasoning, coding & more — all in one unified workspace.
+           Stop juggling tabs and subscriptions - Multimind gives you access to all 
+           best-in-class AI models for just $12/month.
+            That's almost half of what you'd pay for a single premium AI chat subscription.
           </p>
 
           <Link
@@ -110,5 +111,6 @@ export default function LandingPage() {
 
       </div>
     </div>
+    
   );
 }

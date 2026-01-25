@@ -86,53 +86,38 @@ const DeepSeekLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
 // Add these above AI_MODELS in your page.tsx
 
 const MistralLogo = () => (
-  <svg width="32" height="32" viewBox="0 0 256 256">
-    <rect width="256" height="256" rx="60" fill="#FF6B00" />
-    <path
-      d="M75 180 L115 70 L155 180 Z"
-      fill="white"
-    />
-  </svg>
+  <img
+    src="/svg-logos/mistral.svg"
+    alt="Mistral"
+    className="w-8 h-8 object-contain"
+  />
 );
 
+
 const LlamaLogo = () => (
-  <svg width="32" height="32" viewBox="0 0 64 64">
-    <circle cx="32" cy="32" r="30" fill="#007AFF" />
-    <path
-      d="M22 38 C22 26, 42 26, 42 38 C42 46, 22 46, 22 38 Z"
-      fill="white"
-    />
-    <circle cx="26" cy="30" r="4" fill="white" />
-    <circle cx="38" cy="30" r="4" fill="white" />
-  </svg>
+   <img
+    src="/svg-logos/meta.svg"
+    alt="meta"
+    className="w-8 h-8 object-contain"
+  />
 );
 
 const QwenLogo = () => (
-  <svg width="32" height="32" viewBox="0 0 256 256">
-    <rect width="256" height="256" rx="50" fill="#0FA970" />
-    <path
-      d="M128 50 C80 50, 50 90, 50 128 C50 166, 80 206, 128 206 C176 206, 206 166, 206 128 C206 90, 176 50, 128 50 Z M128 170 C102 170, 85 150, 85 128 C85 106, 102 86, 128 86 C154 86, 171 106, 171 128 C171 150, 154 170, 128 170 Z"
-      fill="white"
-    />
-  </svg>
+   <img
+    src="/svg-logos/qwen.svg"
+    alt="qwen"
+    className="w-8 h-8 object-contain"
+  />
 );
 
 const PerplexityLogo = () => (
-  <svg width="32" height="32" viewBox="0 0 256 256">
-    <circle cx="128" cy="128" r="120" fill="#1A73E8" />
-    <text
-      x="128"
-      y="155"
-      textAnchor="middle"
-      fontSize="140"
-      fontWeight="bold"
-      fill="white"
-      fontFamily="Arial, sans-serif"
-    >
-      P
-    </text>
-  </svg>
+   <img
+    src="/svg-logos/perplexity.svg"
+    alt="perplexity"
+    className="w-8 h-8 object-contain"
+  />
 );
+
 
 
 const GrokLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
@@ -332,15 +317,15 @@ const AI_MODELS: AIModel[] = [
 },
 
   {
-    id: "grok",
-    name: "Grok",
-    provider: "xAI",
-    description: "Premium xAI model",
-    icon: <GrokLogo className="w-8 h-8" />,
-    color: "from-orange-500 to-yellow-600",
-    bgColor: "bg-orange-500/10",
-    premium: true,
-  },
+  id: "grok",
+  name: "Grok",
+  provider: "xAI",
+  description: "Premium xAI model",
+  icon: <GrokLogo />,
+  color: "from-orange-500 to-yellow-600",
+  bgColor: "bg-orange-500/10",
+  premium: true,
+},
 ];
 
 
@@ -408,33 +393,6 @@ const [modelPrefs, setModelPrefs] = useState<ModelPreferences>({
 
   
 
-// Auto-save to recent chats
-useEffect(() => {
-    if (recentSessions.length > 0) {
-        localStorage.setItem('recentSessions', JSON.stringify(recentSessions));
-    }
-}, [recentSessions]);
-
-// Load saved chats on page load
-useEffect(() => {
-    const saved = localStorage.getItem('recentSessions');
-    if (saved) {
-        setRecentSessions(JSON.parse(saved));
-    }
-}, []);
-
-// Function to save chats to history
-const saveChatToHistory = (message: string) => {
-    const newChat = {
-        id: Date.now().toString(),
-        title: message.substring(0, 30) + '...',
-        firstMessage: message,
-        date: new Date().toLocaleDateString(),
-        messages: [{ text: message, isUser: true }]
-    };
-    
-    setRecentSessions(prev => [newChat, ...prev]);
-};
 
   // Check for mobile screen size and collapse sidebar by default
   useEffect(() => {
@@ -532,68 +490,41 @@ useEffect(() => {
   
   // Function to load recent chat sessions
 const loadRecentSessions = async () => {
-  if (!user) {
-    setRecentSessions([]);
+  if (!user) return;
+
+  const { data: sessions, error } = await supabase
+    .from('chat_sessions')
+    .select('id, title, updated_at')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
     return;
   }
 
-  try {
-    const { data: sessions, error } = await supabase
-      .from('chat_sessions')
-      .select('id, title, updated_at')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .limit(10);
+  const sessionsWithPreview = await Promise.all(
+    sessions.map(async (s) => {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select('content')
+        .eq('session_id', s.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
 
-    // FIXED: Throw a real Error with message
-    if (error) {
-      throw new Error(`Failed to load sessions: ${error.message}`);
-    }
+      return {
+        id: s.id,
+        title: s.title || "New Chat",
+        firstMessage: data?.[0]?.content || "",
+        date: new Date(s.updated_at).toLocaleDateString(),
+        messages: [],
+      };
+    })
+  );
 
-    if (!sessions || sessions.length === 0) {
-      setRecentSessions([]);
-      return;
-    }
-
-    const sessionsWithFirstMessage = await Promise.all(
-      sessions.map(async (session) => {
-        const { data: messageData, error: msgError } = await supabase
-          .from('messages')
-          .select('content')
-          .eq('session_id', session.id)
-          .order('created_at', { ascending: true })
-          .limit(1);
-
-        if (msgError) {
-          console.warn('Could not fetch first message for session', session.id, msgError);
-        }
-
-        const firstMsg = messageData?.[0]?.content || 'New conversation';
-
-        const updatedAt = new Date(session.updated_at);
-        const now = new Date();
-        const dateDisplay =
-          updatedAt.toDateString() === now.toDateString()
-            ? 'Today'
-            : updatedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        return {
-          id: session.id,
-          title: session.title || 'New conversation',
-          firstMessage: firstMsg,
-          date: dateDisplay,
-          messages: messageData || [],
-        };
-      })
-    );
-
-    setRecentSessions(sessionsWithFirstMessage);
-  } catch (error: any) {
-    // Now you'll see the REAL error message!
-    console.error('Error loading recent sessions:', error.message || error);
-    setRecentSessions([]);
-  }
+  setRecentSessions(sessionsWithPreview);
 };
+
   
   // Function to load a specific chat session
   const loadChatSession = async (sessionId: string) => {
@@ -613,24 +544,29 @@ const loadRecentSessions = async () => {
       setResponses([]);
       
       // Load messages for this session
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('chat_messages')
-        .select('id, content, role, timestamp')
-        .eq('session_id', sessionId)
-        .order('timestamp', { ascending: true });
-      
-      if (messagesError) {
-        console.log('Error fetching messages:', messagesError);
-        throw new Error(`Failed to fetch messages: ${messagesError.message}`);
-      }
-      
-      if (!messagesData) {
-        throw new Error('No message data returned from database');
-      }
-      
+     const { data: messagesData, error } = await supabase
+  .from("chat_messages")
+  .select("*")
+  .eq("session_id", sessionId)
+  .order("created_at", { ascending: true });
+
+if (error) {
+  throw new Error(error.message);
+}
+
+if (!messagesData || messagesData.length === 0) {
+  setMessages([]);
+  setResponses([]);
+  return;
+}
+
+
+
+
+
       if (messagesData) {
         // Load all model responses for all user messages
-        const userMessages = messagesData.filter((msg: { role: string; }) => msg.role === 'user');
+       const userMessages = messagesData.filter((msg) => msg.role === 'user');
         const allResponses = new Map();
         
         // For each user message, load its model responses
@@ -639,50 +575,72 @@ const loadRecentSessions = async () => {
             const { data: responsesData, error: responsesError } = await supabase
               .from('model_responses')
               .select('model_id, content, is_best')
-              .eq('message_id', userMsg.id);
+              .eq('messageData_id', userMsg.id);
             
             if (!responsesError && responsesData) {
               allResponses.set(userMsg.id, responsesData);
             }
           }
         }
-        
         // Create proper conversational flow: user → AI responses → user → AI responses
-        const formattedMessages = [];
-        
-        // Get only user messages and sort them chronologically
-        const userMessagesOnly = messagesData.filter((msg: { role: string; }) => msg.role === 'user')
-          .sort((a: { timestamp: string | number | Date; }, b: { timestamp: string | number | Date; }) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-        
-        for (const userMsg of userMessagesOnly) {
-          // Add user message
-          formattedMessages.push({
-            id: userMsg.id,
-            content: userMsg.content,
-            role: 'user' as const,
-            timestamp: new Date(userMsg.timestamp)
-          });
-          
-          // Add AI responses for this user message
-          if (allResponses.has(userMsg.id)) {
-            const responses = allResponses.get(userMsg.id);
-            for (const response of responses as Array<{model_id: string, content: string, is_best?: boolean}>) {
-              formattedMessages.push({
-                id: `${userMsg.id}-${response.model_id}`,
-                content: response.content,
-                role: 'assistant' as const,
-                timestamp: new Date(userMsg.timestamp),
-                modelId: response.model_id,
-                isBest: response.is_best
-              });
-            }
-          }
-        }
-        
-        setMessages(formattedMessages);
+const formattedMessages: Message[] = [];
+
+// IMPORTANT: use messagesData, NOT messages (state)
+const userMessagesOnly = messagesData
+  .filter(m => m.role === 'user')
+  .sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() -
+      new Date(a.created_at).getTime()
+  );
+
+for (const userMsg of userMessagesOnly) {
+  // User message
+  formattedMessages.push({
+    id: userMsg.id,
+    content: userMsg.content,
+    role: 'user',
+    timestamp: new Date(userMsg.created_at),
+  });
+
+  // AI responses for this user message
+  const responses = allResponses.get(userMsg.id) || [];
+
+  for (const response of responses) {
+    formattedMessages.push({
+      id: `${userMsg.id}-${response.model_id}`,
+      content: response.content,
+      role: 'assistant',
+      timestamp: new Date(userMsg.created_at),
+      modelId: response.model_id,
+      isBest: response.is_best,
+    });
+  }
+}
+
+setMessages(formattedMessages);
+
+// 🔥 MODEL CARDS — last user message only
+const lastUserMessage = userMessages[userMessages.length - 3];
+
+if (lastUserMessage) {
+  const lastResponses = allResponses.get(lastUserMessage.id) || [];
+
+  setResponses(
+    lastResponses.map((r: { model_id: any; content: any; is_best: any; }) => ({
+      modelId: r.model_id,
+      content: r.content,
+      isLoading: false,
+      isBest: r.is_best,
+    }))
+  );
+
+  setSelectedModels(lastResponses.map((r: { model_id: any; }) => r.model_id));
+}
+
         
         // Set responses for the last user message (for current interaction)
-        if (userMessages.length > 0) {
+        if (userMessages.length > 5) {
           const lastUserMessage = userMessages[userMessages.length - 1];
           if (lastUserMessage && allResponses.has(lastUserMessage.id)) {
             const lastResponses = allResponses.get(lastUserMessage.id);
@@ -694,6 +652,7 @@ const loadRecentSessions = async () => {
             }));
             
             setResponses(formattedResponses);
+            
             
             // Update selected models based on responses
             const modelIds = lastResponses.map((resp: {model_id: string, content: string, is_best?: boolean}) => resp.model_id);
@@ -769,8 +728,8 @@ const saveMessageToDatabase = async (message: Message, sessionId: string) => {
 
     return data.id;  // 👍 this is valid
 
-  } catch (error) {
-    console.error("🔥 Error saving message:", error);
+  } catch (error: any) {
+  console.error("🔥 Error saving message:", error?.message || error);
     return null;
   }
 };
@@ -794,17 +753,16 @@ const saveMessageToDatabase = async (message: Message, sessionId: string) => {
     }
   };
 
-  const handleNewChat = async () => {
-    setMessages([]);
-    setResponses([]);
-    setCurrentInput('');
-    setSelectedModels(AI_MODELS.map(m => m.id));
-    setCurrentSessionId(null);
-     loadRecentSessions();
-    
+ const handleNewChat = async () => {
+  setMessages([]);
+  setResponses([]);
+  setCurrentInput('');
+  setSelectedModels(AI_MODELS.map(m => m.id));
+  setCurrentSessionId(null);
+  
 const session = await createNewSession();
   setCurrentSessionId(session.id);
-
+  
 const handleUpdatePreferences = async () => {
   try {
     
@@ -917,7 +875,7 @@ setTimeout(() => {
       const fileNames = attachedFiles.map(file => file.name).join(', ');
       messageContent += `\n[Attached: ${fileNames}]`;
     }
-saveChatToHistory(messageContent);
+
 
 if (attachedFiles.length > 0) {
     const fileNames = attachedFiles.map(file => file.name).join(', ');
@@ -937,11 +895,14 @@ if (attachedFiles.length > 0) {
     setIsLoading(true);
 
     // Create or get session
-    let sessionId = currentSessionId;
-    if (!sessionId) {
-      sessionId = await createNewSession();
-      setCurrentSessionId(sessionId);
-    }
+   let sessionId = currentSessionId;
+
+if (!sessionId) {
+  const session = await createNewSession();
+  sessionId = session.id;
+  setCurrentSessionId(sessionId);
+}
+
 
     // Save user message to database
     let messageId: string | null = null;
@@ -1236,14 +1197,19 @@ const handleUpdatePreferences = async () => {
   </div>
 
   {/* MENU ITEMS */}
-<div className="mt-4 space-y-2"></div>
+<div className="mt-3 space-y-3"></div>
 
    {/* New Chat */}
 <div 
   onClick={handleNewChat}
-  className="flex items-center gap-3 cursor-pointer px-4 py-2 group hover:bg-slate-500 rounded-lg"
+  className="flex items-center gap-3 cursor-pointer px-1 py-1 group hover:bg-slate-500 rounded-lg"
 >
-  <PlusIcon className="w-6 h-6 text-teal-400" />
+  <PlusIcon
+  className={cn(
+    "w-5 h-5",
+    darkMode ? "text-white" : "text-black"
+  )}
+/>
   {!sidebarCollapsed && (
     <span  className="text-sm dark:text-black-700 text-grey">New Chat</span>
 
@@ -1255,11 +1221,19 @@ const handleUpdatePreferences = async () => {
   <div
     onClick={() => setShowHistory(true)}
     className={cn(
-      "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+      "flex items-center gap-3 px-1 py-3 rounded-lg cursor-pointer transition",
      darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
   )}
   >
-    <svg  className="w-4 h-4 dark:text-teal-600 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+  className={cn(
+    "w-4 h-4",
+    darkMode ? "text-white" : "text-black"
+  )}
+  fill="none"
+  stroke="currentColor"
+  viewBox="0 0 24 24"
+>
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
@@ -1276,13 +1250,16 @@ const handleUpdatePreferences = async () => {
 <div
   onClick={() => setIsProjectModalOpen(true)}
   className={cn(
-    "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+    "flex items-center gap-3 px-1 py-3 rounded-lg cursor-pointer transition",
     darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
   )}
 >
-  <Plus 
-    className="w-4 h-4 rotate-90 text-teal-400"
-  />
+  <Plus
+  className={cn(
+    "w-4 h-4 rotate-90",
+    darkMode ? "text-white" : "text-black"
+  )}
+/>
   {!sidebarCollapsed && (
     <span
       className={cn(
@@ -1300,13 +1277,16 @@ const handleUpdatePreferences = async () => {
 <div
   onClick={() => setShowModelMenu(!showModelMenu)}
   className={cn(
-    "flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition",
+    "flex items-center gap-3 px-1 py-3 rounded-lg cursor-pointer transition",
     darkMode ? "hover:bg-slate-700" : "hover:bg-slate-200"
   )}
 >
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
-    className="w-4 h-4 text-teal-400" 
+    className={cn(
+    "w-4 h-4",
+    darkMode ? "text-white" : "text-black"
+  )} 
     fill="none" 
     viewBox="0 0 24 24" 
     strokeWidth={2} 
@@ -1415,10 +1395,13 @@ const handleUpdatePreferences = async () => {
               <div className="flex items-center gap-2 relative" data-dropdown="user-menu">
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className={cn(
-                    "flex items-center gap-2 py-3 bg-gradient-to-r from-teal-500 to-purple-700 text-white rounded-lg hover:from-black-700 hover:to-purple-800 transition-all duration-200 shadow-lg flex-grow",
-                    sidebarCollapsed ? "justify-center px-2" : "px-4"
-                  )}
+                 className={cn(
+  "flex items-center gap-1 py-3 rounded-lg transition shadow-lg flex-grow",
+  sidebarCollapsed ? "justify-center px-2" : "px-2",
+  darkMode
+    ? "bg-black text-white"
+    : "bg-white text-black"
+)}
                   title={user?.email || "User Menu"}
                 >
                   <User className="w-4 h-4" />
@@ -1482,10 +1465,13 @@ const handleUpdatePreferences = async () => {
                 {!sidebarCollapsed && (
                   <button
                     onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className={cn(
-                      "py-3 px-2 bg-gradient-to-r from-teal-500 to-purple-700 text-white rounded-lg hover:from-black-700 hover:to-purple-800 transition-all duration-200 shadow-lg"
-                    )}
-                    title="Collapse Sidebar"
+                   className={cn(
+  "flex items-center gap-1 py-3 rounded-lg transition shadow-lg flex-grow",
+  sidebarCollapsed ? "justify-center px-2" : "px-2",
+  darkMode
+    ? "bg-white text-black"
+    : "bg-black text-white"
+)}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -1496,9 +1482,12 @@ const handleUpdatePreferences = async () => {
               {sidebarCollapsed && (
                 <button
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className={cn(
-                    "w-full py-3 px-2 bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-lg hover:from-violet-700 hover:to-purple-800 transition-all duration-200 shadow-lg flex justify-center mt-3"
-                  )}
+                 className={cn(
+  "py-3 px-2 rounded-lg transition shadow-lg",
+  darkMode
+    ? "bg-white text-black"
+    : "bg-black text-white"
+)}
                   title="Expand Sidebar"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -1702,11 +1691,19 @@ const handleUpdatePreferences = async () => {
 
     <div className="w-full max-w-xs">
       <button
-        onClick={() => setShowSubscribeModal(true)}
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-purple-600 text-white font-medium shadow-lg hover:opacity-90 transition"
-      >
-        Upgrade to Unlock
-      </button>
+  className="
+    w-full py-3 rounded-xl font-semibold transition
+    bg-black text-white
+    dark:bg-white dark:text-black
+    border border-white/10 dark:border-black/10
+    hover:opacity-90
+  "
+>
+  Upgrade to Unlock
+</button>
+
+
+
     </div>
   </div>
 )}

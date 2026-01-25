@@ -1,11 +1,10 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true, // ESLint errors ignore karega
-  },
-  typescript: {
-    ignoreBuildErrors: true, // TypeScript errors bhi ignore
+  images: {
+    domains: [
+      'upload.wikimedia.org',
+      'avatars.githubusercontent.com',
+    ],
   },
 };
 

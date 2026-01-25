@@ -107,7 +107,7 @@ export default function AuthForm() {
                 <div className="mt-2 text-right">
                   <button
                     type="button"
-                    className="text-sm text-slate-400 hover:text-violet-400 transition-colors"
+                    className="text-sm text-slate-400 hover:text-black-400 transition-colors"
                   >
                     Forgot Password?
                   </button>
